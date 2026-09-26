@@ -1,0 +1,23 @@
+[project]
+name = "se3-electricity-forecast"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+authors = [
+    { name = "Hossain007Bhuiyan", email = "hossain.se@outlook.com" }
+]
+requires-python = ">=3.12"
+dependencies = [
+    "ipykernel>=7.3.0",
+    "matplotlib>=3.11.2",
+    "pandas>=3.0.6",
+    "pyarrow>=25.0.1",
+    "requests>=2.34.2",
+]
+
+[project.scripts]
+se3-electricity-forecast = "se3_electricity_forecast:main"
+
+[build-system]
+requires = ["uv_build>=0.12.19,<0.13.0"]
+build-backend = "uv_build"
