@@ -5,6 +5,7 @@ from se3_electricity_forecast.evaluate import TEST_START, VALID_START, mae, rmse
 
 ROOT = Path(__file__).resolve().parents[2]
 FEATURES = ROOT / "data" / "processed" / "features.parquet"
+FORECAST_FEATURES = ROOT / "data" / "processed" / "features_forecast_weather.parquet"
 PREDICTIONS = ROOT / "data" / "processed" / "lgbm_valid_predictions.parquet"
 RESULTS = ROOT / "results"
 
@@ -54,12 +55,12 @@ def month_bounds(start, end):
     return bounds
 
 
-def walk_forward(df, config, start, end):
+def walk_forward(train_df, predict_df, config, start, end):
     bounds = month_bounds(start, end)
     parts = []
     for month_start, month_end in zip(bounds[:-1], bounds[1:]):
-        train = df[df["time_local"] < month_start]
-        test = df[(df["time_local"] >= month_start) & (df["time_local"] < month_end)]
+        train = train_df[train_df["time_local"] < month_start]
+        test = predict_df[(predict_df["time_local"] >= month_start) & (predict_df["time_local"] < month_end)]
 
         model = lgb.LGBMRegressor(objective=config["objective"], **PARAMS)
         model.fit(train[FEATURE_COLS], make_target(train, config["target"]))
@@ -75,6 +76,7 @@ def walk_forward(df, config, start, end):
 
 def main():
     df = pd.read_parquet(FEATURES)
+    df_forecast = pd.read_parquet(FORECAST_FEATURES)
     baselines = pd.read_csv(RESULTS / "baselines.csv")
     valid_baselines = baselines[baselines["split"] == "valid"]
     naive_mae = valid_baselines.loc[valid_baselines["model"] == "weekly_naive", "mae"].iloc[0]
@@ -84,7 +86,7 @@ def main():
     all_preds = []
     for config in CONFIGS:
         print("training", config["name"], "...")
-        preds = walk_forward(df, config, VALID_START, TEST_START)
+        preds = walk_forward(df, df_forecast, config, VALID_START, TEST_START)
         preds["model"] = config["name"]
         all_preds.append(preds)
         model_mae = mae(preds["actual"], preds["prediction"])
