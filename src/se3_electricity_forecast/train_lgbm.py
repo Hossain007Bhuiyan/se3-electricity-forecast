@@ -1,3 +1,8 @@
+# Trains LightGBM models with monthly walk-forward validation on the validation year.
+# Four versions are compared (2 targets x 2 loss types). Summary goes to
+# results/lgbm_validation.csv, all hourly predictions to data/processed/.
+
+
 from pathlib import Path
 import lightgbm as lgb
 import pandas as pd
@@ -9,6 +14,8 @@ FORECAST_FEATURES = ROOT / "data" / "processed" / "features_forecast_weather.par
 PREDICTIONS = ROOT / "data" / "processed" / "lgbm_valid_predictions.parquet"
 RESULTS = ROOT / "results"
 
+
+# The 18 inputs the model may use. Time columns and the target itself are left out on purpose.
 FEATURE_COLS = [
     "hour", "weekday", "month", "is_weekend", "is_holiday",
     "price_lag_24h", "price_lag_48h", "price_lag_168h",
@@ -16,6 +23,8 @@ FEATURE_COLS = [
     "temperature_2m", "wind_speed_10m", "precipitation", "cloud_cover", "shortwave_radiation",
 ]
 
+
+# Fixed, standard settings. They are not tuned, to keep the validation result honest.
 PARAMS = {
     "n_estimators": 600,
     "learning_rate": 0.03,
@@ -28,6 +37,10 @@ PARAMS = {
     "verbose": -1,
 }
 
+
+# target "price": predict the price directly.
+# target "diff": predict the difference from yesterday's average, then add it back.
+# objective "l2" focuses on squared errors (big misses), "l1" on absolute errors (matches MAE).
 CONFIGS = [
     {"name": "lgbm_price_l2", "target": "price", "objective": "l2"},
     {"name": "lgbm_price_l1", "target": "price", "objective": "l1"},
@@ -36,18 +49,22 @@ CONFIGS = [
 ]
 
 
+# Returns what the model should learn, depending on the chosen target.
 def make_target(df, target):
     if target == "diff":
         return df["price_sek_kwh"] - df["prev_day_mean"]
     return df["price_sek_kwh"]
 
 
+# Turns the model output back into a price in SEK/kWh.
 def to_price(pred, df, target):
     if target == "diff":
         return pred + df["prev_day_mean"].to_numpy()
     return pred
 
 
+# Returns the month start dates between start and end, e.g. 1 Oct 2024, 1 Nov 2024, ...
+# If the period does not end on a month start (like the test period), the end date is added.
 def month_bounds(start, end):
     bounds = list(pd.date_range(start, end, freq="MS"))
     if bounds[-1] < end:
@@ -55,6 +72,8 @@ def month_bounds(start, end):
     return bounds
 
 
+# For each month: train a new model on everything before that month, then predict the month.
+# train_df has measured weather, predict_df has the weather forecasts.
 def walk_forward(train_df, predict_df, config, start, end):
     bounds = month_bounds(start, end)
     parts = []
@@ -66,6 +85,7 @@ def walk_forward(train_df, predict_df, config, start, end):
         model.fit(train[FEATURE_COLS], make_target(train, config["target"]))
         pred = to_price(model.predict(test[FEATURE_COLS]), test, config["target"])
 
+        # .to_numpy() places values by position, not by pandas row labels
         parts.append(pd.DataFrame({
             "time_utc": test["time_utc"].to_numpy(),
             "actual": test["price_sek_kwh"].to_numpy(),
@@ -77,6 +97,8 @@ def walk_forward(train_df, predict_df, config, start, end):
 def main():
     df = pd.read_parquet(FEATURES)
     df_forecast = pd.read_parquet(FORECAST_FEATURES)
+
+    # Use the same benchmark as in baselines.py, so rel_mae is directly comparable
     baselines = pd.read_csv(RESULTS / "baselines.csv")
     valid_baselines = baselines[baselines["split"] == "valid"]
     naive_mae = valid_baselines.loc[valid_baselines["model"] == "weekly_naive", "mae"].iloc[0]
@@ -98,6 +120,7 @@ def main():
             "rel_mae": model_mae / naive_mae,
         })
 
+    # Sorted by MAE, so the best version is the first row
     results = pd.DataFrame(rows).sort_values("mae")
     results.to_csv(RESULTS / "lgbm_validation.csv", index=False)
     pd.concat(all_preds, ignore_index=True).to_parquet(PREDICTIONS, index=False)
