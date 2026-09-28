@@ -2,15 +2,25 @@
 # Every row is one hour we want to predict. Price features only use data up to the day
 # before, because that is all we know in the morning when the forecast is made.
 
-
 from datetime import timedelta
 from pathlib import Path
+
 import holidays
 import pandas as pd
 
 ROOT = Path(__file__).resolve().parents[2]
 RAW = ROOT / "data" / "raw"
 PROCESSED = ROOT / "data" / "processed"
+
+# The 18 inputs the models may use. Time columns and the target itself are left out on purpose.
+# Defined here, next to the code that creates them, so every model uses exactly the same list.
+FEATURE_COLS = [
+    "hour", "weekday", "month", "is_weekend", "is_holiday",
+    "price_lag_24h", "price_lag_48h", "price_lag_168h",
+    "prev_day_mean", "prev_day_min", "prev_day_max", "prev_day_std", "prev_7d_mean",
+    "temperature_2m", "wind_speed_10m", "precipitation", "cloud_cover", "shortwave_radiation",
+]
+
 
 # Returns a set of all Swedish holiday dates for the given years.
 def swedish_holidays(years):
@@ -30,11 +40,12 @@ def swedish_holidays(years):
         days.add(pd.Timestamp(year, 12, 31).date())
     return days
 
+
 # Adds hour, weekday, month, weekend and holiday columns based on Swedish local time.
 def add_calendar_features(df):
     local = df["time_local"]
     df["hour"] = local.dt.hour
-    df["weekday"] = local.dt.dayofweek
+    df["weekday"] = local.dt.dayofweek  # 0 = Monday, 6 = Sunday
     df["month"] = local.dt.month
     df["is_weekend"] = (df["weekday"] >= 5).astype(int)
     # +2 so next year's holidays are also known when forecasting across New Year
@@ -52,6 +63,7 @@ def add_lag_features(df):
     df["price_lag_48h"] = price.shift(48)
     df["price_lag_168h"] = price.shift(168)
     return df
+
 
 # Adds statistics of the previous day (mean, min, max, std) and the average of the last 7 days.
 def add_previous_day_features(df):

@@ -2,14 +2,18 @@
 # The LSTM reads the last 7 days of hourly prices, and a small network combines that with
 # the same features LightGBM uses. Summary goes to results/lstm_validation.csv.
 
-
 from pathlib import Path
+
 import numpy as np
 import pandas as pd
 import torch
 from torch import nn
-from se3_electricity_forecast.evaluate import TEST_START, VALID_START, mae, rmse
-from se3_electricity_forecast.train_lgbm import FEATURE_COLS, month_bounds
+
+# FEATURE_COLS and month_bounds come from features.py and evaluate.py, not from train_lgbm.py.
+# Importing train_lgbm.py would also load LightGBM, and LightGBM and PyTorch bring different
+# copies of the OpenMP threading library, which can crash or freeze Python on macOS.
+from se3_electricity_forecast.evaluate import TEST_START, VALID_START, mae, month_bounds, rmse
+from se3_electricity_forecast.features import FEATURE_COLS
 
 ROOT = Path(__file__).resolve().parents[2]
 PRICES = ROOT / "data" / "raw" / "prices_se3_hourly.parquet"
@@ -27,8 +31,6 @@ HOLDOUT_DAYS = 60      # days before each month used to decide when to stop trai
 LEARNING_RATE = 0.001  # standard step size for the Adam optimizer
 SEED = 42              # makes the random parts repeatable
 
-
-
 # A neural network would see hour 23 and hour 0 as far apart. Turning hour, weekday and
 # month into sine and cosine puts them on a circle, where 23:00 and 00:00 are neighbours.
 CYCLES = {"hour": 24, "weekday": 7, "month": 12}
@@ -40,15 +42,13 @@ INPUT_COLS = [c for c in FEATURE_COLS if c not in CYCLES] + [
 class PriceLSTM(nn.Module):
     def __init__(self, n_inputs):
         super().__init__()
-
         # Reads the price sequence, one price per hour
         self.lstm = nn.LSTM(input_size=1, hidden_size=HIDDEN, batch_first=True)
-
         # Combines the LSTM summary with the other features and outputs one price
         self.head = nn.Sequential(
             nn.Linear(HIDDEN + n_inputs, 64),
-            nn.ReLU(),         # lets the network learn non-linear relationships
-            nn.Dropout(0.1),   # switches off 10% of connections during training to reduce overfitting
+            nn.ReLU(),        # lets the network learn non-linear relationships
+            nn.Dropout(0.1),  # switches off 10% of connections during training to reduce overfitting
             nn.Linear(64, 1),
         )
 
@@ -57,7 +57,6 @@ class PriceLSTM(nn.Module):
         _, (h, _) = self.lstm(seq)
         x = torch.cat([h[-1], tab], dim=1)
         return self.head(x).squeeze(1)
-
 
 
 # Adds sine and cosine columns for hour, weekday and month.
@@ -69,12 +68,10 @@ def add_cyclical(df):
     return df
 
 
-
 # For each row, finds the position of 23:00 on the previous day in the price list.
 # That is the last price really known in the morning, so the sequence ends there.
 # It works with calendar dates instead of "minus 24 hours", so it stays correct
 # on the days when the clock changes (23-hour and 25-hour days).
-
 def add_sequence_end(df, prices):
     price_dates = pd.to_datetime(prices["time_local"].dt.date)
     last_index = pd.Series(np.arange(len(prices)), index=price_dates.to_numpy()).groupby(level=0).max()
@@ -88,7 +85,6 @@ def add_sequence_end(df, prices):
 def make_sequences(price_values, seq_end):
     offsets = np.arange(-SEQ_LEN + 1, 1)
     return price_values[seq_end[:, None] + offsets]
-
 
 
 # Scales the data and converts it to PyTorch tensors.
@@ -137,11 +133,9 @@ def fit_predict(train, holdout, predict, price_values):
             optimizer.zero_grad()
             loss = loss_fn(model(seq_tr[idx], tab_tr[idx]), y_tr[idx])
             loss.backward()  # works out how each weight should change
-
             # Limits the size of one update. Price spikes can otherwise make LSTM training unstable.
             nn.utils.clip_grad_norm_(model.parameters(), 1.0)
             optimizer.step()  # updates the weights
-
 
         # Test on the holdout after every epoch and keep a copy of the best model so far
         model.eval()
@@ -160,14 +154,12 @@ def fit_predict(train, holdout, predict, price_values):
     model.eval()
     with torch.no_grad():
         pred = model(seq_pr, tab_pr).numpy()
-
     # Undo the scaling: back to SEK/kWh
     return pred * stats[1] + stats[0], epoch
 
 
 # Same idea as in train_lgbm.py: a new model for every month, trained only on earlier data.
 # The 60 days just before each month are kept apart as a holdout for early stopping.
-
 def walk_forward(train_df, predict_df, price_values, start, end):
     bounds = month_bounds(start, end)
     parts = []
@@ -211,7 +203,6 @@ def main():
         "rel_mae": lstm_mae / naive_mae,
     }])
     results.to_csv(RESULTS / "lstm_validation.csv", index=False)
-
 
     # The LightGBM file is sorted by MAE, so the first row is the best version
     lgbm = pd.read_csv(RESULTS / "lgbm_validation.csv").iloc[0]

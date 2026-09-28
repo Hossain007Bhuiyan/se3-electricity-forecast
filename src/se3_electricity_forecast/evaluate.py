@@ -22,6 +22,16 @@ def split(df):
     return train, valid, test
 
 
+# Returns the month start dates between start and end, e.g. 1 Oct 2024, 1 Nov 2024, ...
+# Used by the monthly walk-forward training. If the period does not end on a month start
+# (like the test period), the end date is added as the last boundary.
+def month_bounds(start, end):
+    bounds = list(pd.date_range(start, end, freq="MS"))
+    if bounds[-1] < end:
+        bounds.append(end)
+    return bounds
+
+
 # Mean absolute error: the average size of the error in SEK/kWh.
 # np.asarray compares values by position instead of by pandas row labels.
 def mae(y_true, y_pred):

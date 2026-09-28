@@ -2,11 +2,13 @@
 # Four versions are compared (2 targets x 2 loss types). Summary goes to
 # results/lgbm_validation.csv, all hourly predictions to data/processed/.
 
-
 from pathlib import Path
+
 import lightgbm as lgb
 import pandas as pd
-from se3_electricity_forecast.evaluate import TEST_START, VALID_START, mae, rmse
+
+from se3_electricity_forecast.evaluate import TEST_START, VALID_START, mae, month_bounds, rmse
+from se3_electricity_forecast.features import FEATURE_COLS
 
 ROOT = Path(__file__).resolve().parents[2]
 FEATURES = ROOT / "data" / "processed" / "features.parquet"
@@ -14,29 +16,18 @@ FORECAST_FEATURES = ROOT / "data" / "processed" / "features_forecast_weather.par
 PREDICTIONS = ROOT / "data" / "processed" / "lgbm_valid_predictions.parquet"
 RESULTS = ROOT / "results"
 
-
-# The 18 inputs the model may use. Time columns and the target itself are left out on purpose.
-FEATURE_COLS = [
-    "hour", "weekday", "month", "is_weekend", "is_holiday",
-    "price_lag_24h", "price_lag_48h", "price_lag_168h",
-    "prev_day_mean", "prev_day_min", "prev_day_max", "prev_day_std", "prev_7d_mean",
-    "temperature_2m", "wind_speed_10m", "precipitation", "cloud_cover", "shortwave_radiation",
-]
-
-
 # Fixed, standard settings. They are not tuned, to keep the validation result honest.
 PARAMS = {
-    "n_estimators": 600,
-    "learning_rate": 0.03,
-    "num_leaves": 31,
-    "min_child_samples": 50,
-    "subsample": 0.8,
-    "subsample_freq": 1,
-    "colsample_bytree": 0.8,
-    "random_state": 42,
-    "verbose": -1,
+    "n_estimators": 600,         # number of small trees
+    "learning_rate": 0.03,       # each tree only corrects a little, which is more stable
+    "num_leaves": 31,            # limits how detailed each tree can be
+    "min_child_samples": 50,     # each leaf needs at least 50 rows, which reduces overfitting
+    "subsample": 0.8,            # each tree sees a random 80% of the rows...
+    "subsample_freq": 1,         # ...drawn again for every tree
+    "colsample_bytree": 0.8,     # and a random 80% of the columns
+    "random_state": 42,          # makes the randomness repeatable
+    "verbose": -1,               # hides LightGBM's internal messages
 }
-
 
 # target "price": predict the price directly.
 # target "diff": predict the difference from yesterday's average, then add it back.
@@ -61,15 +52,6 @@ def to_price(pred, df, target):
     if target == "diff":
         return pred + df["prev_day_mean"].to_numpy()
     return pred
-
-
-# Returns the month start dates between start and end, e.g. 1 Oct 2024, 1 Nov 2024, ...
-# If the period does not end on a month start (like the test period), the end date is added.
-def month_bounds(start, end):
-    bounds = list(pd.date_range(start, end, freq="MS"))
-    if bounds[-1] < end:
-        bounds.append(end)
-    return bounds
 
 
 # For each month: train a new model on everything before that month, then predict the month.
