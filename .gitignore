@@ -10,3 +10,7 @@ wheels/
 .venv
 data/
 .DS_Store
+
+# MLflow tracking data (local, machine-specific)
+mlflow.db
+mlartifacts/

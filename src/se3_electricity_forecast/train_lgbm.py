@@ -3,12 +3,12 @@
 # results/lgbm_validation.csv, all hourly predictions to data/processed/.
 
 from pathlib import Path
-
 import lightgbm as lgb
 import pandas as pd
-
+from se3_electricity_forecast import tracking
 from se3_electricity_forecast.evaluate import TEST_START, VALID_START, mae, month_bounds, rmse
 from se3_electricity_forecast.features import FEATURE_COLS
+
 
 ROOT = Path(__file__).resolve().parents[2]
 FEATURES = ROOT / "data" / "processed" / "features.parquet"
@@ -90,9 +90,19 @@ def main():
     all_preds = []
     for config in CONFIGS:
         print("training", config["name"], "...")
-        preds = walk_forward(df, df_forecast, config, VALID_START, TEST_START)
+        # Everything that defines this version is saved with the run, so it can be repeated exactly
+        params = {**PARAMS, "target": config["target"], "objective": config["objective"],
+                  "features": ",".join(FEATURE_COLS), "period_start": str(VALID_START.date()),
+                  "period_end": str(TEST_START.date()), "retrain": "monthly walk-forward",
+                  "prediction_weather": "2-day-old forecasts", "lightgbm_version": lgb.__version__}
+        with tracking.start_run(config["name"], stage="validation", model="lightgbm", params=params, data=df):
+            preds = walk_forward(df, df_forecast, config, VALID_START, TEST_START)
+            tracking.log_results(preds, naive_mae)
         preds["model"] = config["name"]
         all_preds.append(preds)
+
+
+
         model_mae = mae(preds["actual"], preds["prediction"])
         rows.append({
             "model": config["name"],

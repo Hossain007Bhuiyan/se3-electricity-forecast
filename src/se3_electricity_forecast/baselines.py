@@ -5,7 +5,9 @@
 from pathlib import Path
 import numpy as np
 import pandas as pd
+from se3_electricity_forecast import tracking
 from se3_electricity_forecast.evaluate import mae, rmse, split
+
 
 ROOT = Path(__file__).resolve().parents[2]
 FEATURES = ROOT / "data" / "processed" / "features.parquet"
@@ -56,6 +58,23 @@ def main():
         print()
         print(split_name)
         print(results[results["split"] == split_name].drop(columns="split").round(4).to_string(index=False))
+    
+    
+### Added this whole block for MLflow
+    # Save every baseline as an MLflow run, so the models can be compared with them in MLflow
+    for split_name, part in [("valid", valid), ("test", test)]:
+        stage = "validation" if split_name == "valid" else "test"
+        for model, pred in baseline_predictions(part).items():
+            preds = pd.DataFrame({
+                "time_utc": part["time_utc"].to_numpy(),
+                "actual": part["price_sek_kwh"].to_numpy(),
+                "prediction": np.asarray(pred),
+            })
+            with tracking.start_run(model, stage=stage, model="baseline", params={"rule": model}, data=df):
+                tracking.log_results(preds, naive_mae[split_name])
+    print()
+    print("saved 8 baseline runs to MLflow")
+### Until here
 
 
 if __name__ == "__main__":
