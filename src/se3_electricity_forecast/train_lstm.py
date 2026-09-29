@@ -101,9 +101,9 @@ def to_tensors(part, price_values, stats):
     )
 
 
-# Trains one model with early stopping and returns its predictions (in SEK/kWh)
-# and the number of epochs it ran.
-def fit_predict(train, holdout, predict, price_values):
+# Trains one model with early stopping. Returns the best model, the scaling values
+# it was trained with, and the number of epochs it ran.
+def fit(train, holdout, price_values):
     # Scaling values come only from the training part. Using other parts would leak information.
     # replace(0, 1) avoids dividing by zero if a column never changes.
     stats = (
@@ -114,7 +114,6 @@ def fit_predict(train, holdout, predict, price_values):
     )
     seq_tr, tab_tr, y_tr = to_tensors(train, price_values, stats)
     seq_ho, tab_ho, y_ho = to_tensors(holdout, price_values, stats)
-    seq_pr, tab_pr, _ = to_tensors(predict, price_values, stats)
 
     torch.manual_seed(SEED)
     model = PriceLSTM(len(INPUT_COLS))
@@ -152,10 +151,24 @@ def fit_predict(train, holdout, predict, price_values):
 
     model.load_state_dict(best_state)
     model.eval()
+    return model, stats, epoch
+
+
+# Predicts prices (in SEK/kWh) for the rows in `predict` with a trained model.
+def predict_prices(model, stats, predict, price_values):
+    seq_pr, tab_pr, _ = to_tensors(predict, price_values, stats)
+    model.eval()
     with torch.no_grad():
         pred = model(seq_pr, tab_pr).numpy()
     # Undo the scaling: back to SEK/kWh
-    return pred * stats[1] + stats[0], epoch
+    return pred * stats[1] + stats[0]
+
+
+# Trains one model and predicts the given rows. Returns the predictions and the number
+# of epochs, exactly as before the split into fit() and predict_prices().
+def fit_predict(train, holdout, predict, price_values):
+    model, stats, epoch = fit(train, holdout, price_values)
+    return predict_prices(model, stats, predict, price_values), epoch
 
 
 # Same idea as in train_lgbm.py: a new model for every month, trained only on earlier data.
