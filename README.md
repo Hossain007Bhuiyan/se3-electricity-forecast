@@ -8,4 +8,6 @@ The official day-ahead prices for the next day are published around 13:00 Swedis
 
 The goal is to build a complete forecasting system, from collecting the data and training the model to publishing new forecasts automatically every day.
 
+The best model so far is about 34% more accurate than a simple baseline forecast ("same hour yesterday") on a full year of unseen test data (Oct 2025 – Sep 2026).
+
 Data sources: [elprisetjustnu.se](https://www.elprisetjustnu.se) for electricity prices and [Open-Meteo](https://open-meteo.com) for weather.
