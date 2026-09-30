@@ -208,7 +208,9 @@ def main():
     prices = pd.read_parquet(PRICES).sort_values("time_utc").reset_index(drop=True)
     price_values = prices["price_sek_kwh"].to_numpy()
     # Train on measured weather, predict with the weather forecasts
-    df = add_sequence_end(add_cyclical(pd.read_parquet(FEATURES)), prices)
+    # unchanged in `features` for the MLflow data fingerprint, so it matches the other runs.
+    features = pd.read_parquet(FEATURES)
+    df = add_sequence_end(add_cyclical(features), prices)
     df_forecast = add_sequence_end(add_cyclical(pd.read_parquet(FORECAST_FEATURES)), prices)
 
     # Same benchmark as the baselines and LightGBM, so rel_mae is directly comparable
@@ -216,7 +218,7 @@ def main():
     naive_mae = baselines.query("split == 'valid' and model == 'weekly_naive'")["mae"].iloc[0]
 
     with tracking.start_run("lstm", stage="validation", model="lstm",
-                            params=mlflow_params(VALID_START, TEST_START), data=df):
+                            params=mlflow_params(VALID_START, TEST_START), data=features):
         preds = walk_forward(df, df_forecast, price_values, VALID_START, TEST_START)
         tracking.log_results(preds, naive_mae)
     preds.to_parquet(PREDICTIONS, index=False)
