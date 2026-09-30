@@ -24,8 +24,8 @@ SHAP values show how a model uses its inputs, not proven causes. Inputs that car
 
 All model runs are tracked with MLflow: the baselines, the four LightGBM versions and the LSTM, on both the validation year and the test year. For every run, MLflow records its settings, its results (MAE, RMSE and the error for every month), its hourly predictions, the Git commit of the code and a fingerprint of the data. This makes all runs comparable side by side, and every result can be traced back to the exact code and data behind it. The tracking data is stored locally and is not part of this repository; the screenshots show the tracked runs.
 
-<img width="1920" height="1080" alt="Image" src="https://github.com/user-attachments/assets/0b448579-91a9-4e13-b4c7-47a282b1d242" />
-<img width="1920" height="1080" alt="Image" src="https://github.com/user-attachments/assets/6983c5a6-6f7c-449a-bd56-8bfea5402617" />
+<img width="1652" height="1162" alt="Image" src="https://github.com/user-attachments/assets/74cb362d-e7ad-4497-8034-e60c8b53a42e" />
+<img width="1920" height="1080" alt="Image" src="https://github.com/user-attachments/assets/f0ef61ed-9f10-4a70-ac3b-f2eb1d914c53" />
 
 ## Next steps
 
