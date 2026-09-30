@@ -30,7 +30,7 @@ All model runs are tracked with MLflow: the baselines, the four LightGBM version
 ## Next steps
 
 - Automated tests for the data pipeline and the models, run on every change with GitHub Actions
-- Daily forecasts: every morning, new data and a weather forecast are downloaded, tomorrow's 24 hourly prices are predicted, and the forecasts are later compared with the actual prices
+- Daily forecasts: every morning, new data and a weather forecast are downloaded, tomorrow's 24 hourly prices are predicted and the forecasts are later compared with the actual prices
 - A dashboard showing the latest forecast and the live accuracy
 - Final documentation with the full results, limitations and an architecture diagram
 
