@@ -3,7 +3,6 @@
 # the same features LightGBM uses. Summary goes to results/lstm_validation.csv.
 
 from pathlib import Path
-
 import numpy as np
 import pandas as pd
 import torch
@@ -12,6 +11,7 @@ from torch import nn
 # FEATURE_COLS and month_bounds come from features.py and evaluate.py, not from train_lgbm.py.
 # Importing train_lgbm.py would also load LightGBM, and LightGBM and PyTorch bring different
 # copies of the OpenMP threading library, which can crash or freeze Python on macOS.
+from se3_electricity_forecast import tracking
 from se3_electricity_forecast.evaluate import TEST_START, VALID_START, mae, month_bounds, rmse
 from se3_electricity_forecast.features import FEATURE_COLS
 
@@ -171,6 +171,16 @@ def fit_predict(train, holdout, predict, price_values):
     return predict_prices(model, stats, predict, price_values), epoch
 
 
+# Everything that defines the LSTM, saved with its MLflow run so it can be repeated exactly.
+# Used for the validation run here and for the test run in final_test.py.
+def mlflow_params(start, end):
+    return {"seq_len": SEQ_LEN, "hidden": HIDDEN, "batch_size": BATCH_SIZE, "max_epochs": MAX_EPOCHS,
+            "patience": PATIENCE, "holdout_days": HOLDOUT_DAYS, "learning_rate": LEARNING_RATE,
+            "seed": SEED, "loss": "L1", "inputs": ",".join(INPUT_COLS), "period_start": str(start.date()),
+            "period_end": str(end.date()), "retrain": "monthly walk-forward",
+            "prediction_weather": "2-day-old forecasts", "device": "cpu", "torch_version": torch.__version__}
+
+
 # Same idea as in train_lgbm.py: a new model for every month, trained only on earlier data.
 # The 60 days just before each month are kept apart as a holdout for early stopping.
 def walk_forward(train_df, predict_df, price_values, start, end):
@@ -201,12 +211,16 @@ def main():
     df = add_sequence_end(add_cyclical(pd.read_parquet(FEATURES)), prices)
     df_forecast = add_sequence_end(add_cyclical(pd.read_parquet(FORECAST_FEATURES)), prices)
 
-    preds = walk_forward(df, df_forecast, price_values, VALID_START, TEST_START)
-    preds.to_parquet(PREDICTIONS, index=False)
-
     # Same benchmark as the baselines and LightGBM, so rel_mae is directly comparable
     baselines = pd.read_csv(RESULTS / "baselines.csv")
     naive_mae = baselines.query("split == 'valid' and model == 'weekly_naive'")["mae"].iloc[0]
+
+    with tracking.start_run("lstm", stage="validation", model="lstm",
+                            params=mlflow_params(VALID_START, TEST_START), data=df):
+        preds = walk_forward(df, df_forecast, price_values, VALID_START, TEST_START)
+        tracking.log_results(preds, naive_mae)
+    preds.to_parquet(PREDICTIONS, index=False)
+
     lstm_mae = mae(preds["actual"], preds["prediction"])
     results = pd.DataFrame([{
         "model": "lstm",

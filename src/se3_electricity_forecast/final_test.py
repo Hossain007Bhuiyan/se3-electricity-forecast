@@ -15,11 +15,12 @@
 
 import sys
 from pathlib import Path
-
 import pandas as pd
-
+from se3_electricity_forecast import tracking
 from se3_electricity_forecast.baselines import baseline_predictions
 from se3_electricity_forecast.evaluate import TEST_END, TEST_START, mae, rmse, split
+
+
 
 ROOT = Path(__file__).resolve().parents[2]
 PRICES = ROOT / "data" / "raw" / "prices_se3_hourly.parquet"
@@ -33,6 +34,13 @@ RESULTS = ROOT / "results"
 LGBM_NAME = "lgbm_price_l1"
 
 
+# MAE of the weekly_naive benchmark on the test year, from results/baselines.csv, so the
+# test runs in MLflow get the same rel_mae as in test_results.csv
+def naive_test_mae():
+    baselines = pd.read_csv(RESULTS / "baselines.csv")
+    return baselines.query("split == 'test' and model == 'weekly_naive'")["mae"].iloc[0]
+
+
 # Trains LightGBM month by month on the test year and saves the hourly predictions.
 def run_lgbm():
     from se3_electricity_forecast import train_lgbm  # loads LightGBM only, never PyTorch
@@ -43,7 +51,10 @@ def run_lgbm():
 
     print("training LightGBM ...")
     lgbm_config = next(c for c in train_lgbm.CONFIGS if c["name"] == LGBM_NAME)
-    preds = train_lgbm.walk_forward(df, df_forecast, lgbm_config, TEST_START, TEST_END)
+    params = train_lgbm.mlflow_params(lgbm_config, TEST_START, TEST_END)
+    with tracking.start_run(LGBM_NAME, stage="test", model="lightgbm", params=params, data=df):
+        preds = train_lgbm.walk_forward(df, df_forecast, lgbm_config, TEST_START, TEST_END)
+        tracking.log_results(preds, naive_test_mae())
     preds.to_parquet(LGBM_PREDICTIONS, index=False)
     print("saved", len(preds), "LightGBM predictions")
 
@@ -62,7 +73,10 @@ def run_lstm():
     df_forecast_lstm = train_lstm.add_sequence_end(train_lstm.add_cyclical(df_forecast), prices)
 
     print("training LSTM (one line per finished month, the first one can take a while) ...")
-    preds = train_lstm.walk_forward(df_lstm, df_forecast_lstm, price_values, TEST_START, TEST_END)
+    params = train_lstm.mlflow_params(TEST_START, TEST_END)
+    with tracking.start_run("lstm", stage="test", model="lstm", params=params, data=df):
+        preds = train_lstm.walk_forward(df_lstm, df_forecast_lstm, price_values, TEST_START, TEST_END)
+        tracking.log_results(preds, naive_test_mae())
     preds.to_parquet(LSTM_PREDICTIONS, index=False)
     print("saved", len(preds), "LSTM predictions")
 
