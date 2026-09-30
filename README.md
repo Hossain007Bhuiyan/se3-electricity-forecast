@@ -20,4 +20,18 @@ To understand how the models reach their forecasts, they were analysed with SHAP
 
 SHAP values show how a model uses its inputs, not proven causes. Inputs that carry similar information, such as yesterday's price and the price history of the last week, share their importance between them. The SHAP charts explain a version of each model trained once before the test year, so their forecasts can differ slightly from the monthly retrained models above (for the hour above: 1.76 instead of 1.82 SEK/kWh). The charts are in the `figures` folder.
 
+## Experiment tracking
+
+All model runs are tracked with MLflow: the baselines, the four LightGBM versions and the LSTM, on both the validation year and the test year. For every run, MLflow records its settings, its results (MAE, RMSE and the error for every month), its hourly predictions, the Git commit of the code and a fingerprint of the data. This makes all runs comparable side by side, and every result can be traced back to the exact code and data behind it. The tracking data is stored locally and is not part of this repository; the screenshots show the tracked runs.
+
+<img width="1920" height="1080" alt="Image" src="https://github.com/user-attachments/assets/0b448579-91a9-4e13-b4c7-47a282b1d242" />
+<img width="1920" height="1080" alt="Image" src="https://github.com/user-attachments/assets/6983c5a6-6f7c-449a-bd56-8bfea5402617" />
+
+## Next steps
+
+- Automated tests for the data pipeline and the models, run on every change with GitHub Actions
+- Daily forecasts: every morning, new data and a weather forecast are downloaded, tomorrow's 24 hourly prices are predicted, and the forecasts are later compared with the actual prices
+- A dashboard showing the latest forecast and the live accuracy
+- Final documentation with the full results, limitations and an architecture diagram
+
 Data sources: [elprisetjustnu.se](https://www.elprisetjustnu.se) for electricity prices and [Open-Meteo](https://open-meteo.com) for weather.
