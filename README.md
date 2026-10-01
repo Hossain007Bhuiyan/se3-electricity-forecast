@@ -1,10 +1,9 @@
 # SE3 Electricity Price Forecast
 
-# SE3 Electricity Price Forecast
-
 <p>
   <a href="https://github.com/Hossain007Bhuiyan/se3-electricity-forecast/actions/workflows/tests.yml"><img src="https://github.com/Hossain007Bhuiyan/se3-electricity-forecast/actions/workflows/tests.yml/badge.svg" alt="tests" height="32"></a>
 </p>
+
 
 > Status: work in progress. Daily automated forecasts and a dashboard are being added.
 
