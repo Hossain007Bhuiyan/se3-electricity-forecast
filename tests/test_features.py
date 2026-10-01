@@ -31,6 +31,21 @@ def test_lag_features_come_from_earlier_hours(prices):
         assert df["price_lag_168h"].iloc[i] == df["price_sek_kwh"].iloc[i - 168]
 
 
+def test_no_lag_comes_from_the_forecast_day_itself(prices):
+    # On 26 Oct 2025 (a 25-hour day), the last hour is only 24 hours after midnight of the same
+    # day. Its 24-hour lag must still come from the day before, never from the forecast day.
+    df = add_lag_features(prices.copy())
+    price_to_row = {round(p, 2): i for i, p in enumerate(prices["price_sek_kwh"])}
+    for col in ["price_lag_24h", "price_lag_48h", "price_lag_168h"]:
+        for i, value in enumerate(df[col]):
+            if pd.notna(value):
+                source = price_to_row[round(value, 2)]
+                assert prices["time_local"].iloc[source].date() < prices["time_local"].iloc[i].date()
+    last_hour = df[df["time_local"] == pd.Timestamp("2025-10-26 23:00", tz="Europe/Stockholm")]
+    previous_23 = prices[prices["time_local"] == pd.Timestamp("2025-10-25 23:00", tz="Europe/Stockholm")]
+    assert last_hour["price_lag_24h"].iloc[0] == previous_23["price_sek_kwh"].iloc[0]
+
+
 def test_previous_day_features_use_only_the_day_before(prices):
     df = add_previous_day_features(prices.copy())
     day = df[df["time_local"].dt.date == date(2025, 10, 15)]

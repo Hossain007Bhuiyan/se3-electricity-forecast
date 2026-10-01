@@ -4,9 +4,11 @@
 
 from datetime import timedelta
 from pathlib import Path
-
 import holidays
+import numpy as np
 import pandas as pd
+
+
 
 ROOT = Path(__file__).resolve().parents[2]
 RAW = ROOT / "data" / "raw"
@@ -54,14 +56,25 @@ def add_calendar_features(df):
     return df
 
 
-# Adds the price from the same hour 1 day, 2 days and 1 week earlier.
+# Adds the price from 24 hours, 48 hours and 1 week earlier.
 # shift(24) moves the column down 24 rows. This equals 24 hours only because
 # the data has no missing hours (checked in the notebooks).
+# On the day the clock goes back (a 25-hour day in October), the last hour of the day is only
+# 24 hours after midnight of the same day, so shift(24) would take a price from the forecast day
+# itself, which is not known the morning before. In that case the last price of the day before
+# is used instead, so every lag only uses prices that are really known at forecast time.
 def add_lag_features(df):
-    price = df["price_sek_kwh"]
-    df["price_lag_24h"] = price.shift(24)
-    df["price_lag_48h"] = price.shift(48)
-    df["price_lag_168h"] = price.shift(168)
+    price = df["price_sek_kwh"].to_numpy()
+    day = df["time_local"].dt.date.to_numpy()
+    # Position of the last hour of the previous day, for every row
+    first_of_day = pd.Series(np.arange(len(df))).groupby(day).transform("min").to_numpy()
+    last_of_previous_day = first_of_day - 1
+    for hours in (24, 48, 168):
+        lag = pd.Series(price).shift(hours).to_numpy()
+        source = np.arange(len(df)) - hours
+        same_day = (source >= 0) & (source >= first_of_day)  # the lag would come from the forecast day
+        fallback = np.where(last_of_previous_day >= 0, price[np.maximum(last_of_previous_day, 0)], np.nan)
+        df[f"price_lag_{hours}h"] = np.where(same_day, fallback, lag)
     return df
 
 
