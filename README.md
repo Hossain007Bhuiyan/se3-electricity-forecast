@@ -1,6 +1,6 @@
 # SE3 Electricity Price Forecast
 
-> Work in progress. More details will be added when the project is finished.
+[![tests](https://github.com/Hossain007Bhuiyan/se3-electricity-forecast/actions/workflows/tests.yml/badge.svg)](https://github.com/Hossain007Bhuiyan/se3-electricity-forecast/actions/workflows/tests.yml)
 
 This project forecasts tomorrow's hourly electricity prices in Sweden's SE3 price zone (Stockholm region).
 
@@ -27,9 +27,19 @@ All model runs are tracked with MLflow: the baselines, the four LightGBM version
 <img width="1652" height="1162" alt="Image" src="https://github.com/user-attachments/assets/74cb362d-e7ad-4497-8034-e60c8b53a42e" />
 <img width="1920" height="1080" alt="Image" src="https://github.com/user-attachments/assets/f0ef61ed-9f10-4a70-ac3b-f2eb1d914c53" />
 
+## Tests
+
+27 automated tests (pytest) check the most important parts of the project: that features and LSTM input sequences only use information available at forecast time, the time-based split, the summer/winter time changes, Swedish holidays, MLflow tracking, and that model training is repeatable. They use small synthetic data and run automatically with GitHub Actions on every push.
+
+To run them locally:
+
+    uv run pytest
+    uv run pytest tests_torch
+
+The PyTorch tests run as a separate command, because LightGBM and PyTorch must not be loaded in the same Python process on macOS.
+
 ## Next steps
 
-- Automated tests for the data pipeline and the models, run on every change with GitHub Actions
 - Daily forecasts: every morning, new data and a weather forecast are downloaded, tomorrow's 24 hourly prices are predicted and the forecasts are later compared with the actual prices
 - A dashboard showing the latest forecast and the live accuracy
 - Final documentation with the full results, limitations and an architecture diagram
