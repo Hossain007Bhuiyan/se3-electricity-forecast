@@ -29,12 +29,12 @@ SHAP values show how a model uses its inputs, not proven causes. Inputs that car
 
 All model runs are tracked with MLflow: the baselines, the four LightGBM versions and the LSTM, on both the validation year and the test year. For every run, MLflow records its settings, its results (MAE, RMSE and the error for every month), its hourly predictions, the Git commit of the code and a fingerprint of the data. This makes all runs comparable side by side, and every result can be traced back to the exact code and data behind it. The tracking data is stored locally and is not part of this repository; the screenshots show the tracked runs.
 
-<img width="1652" height="1162" alt="Image" src="https://github.com/user-attachments/assets/74cb362d-e7ad-4497-8034-e60c8b53a42e" />
-<img width="1920" height="1080" alt="Image" src="https://github.com/user-attachments/assets/f0ef61ed-9f10-4a70-ac3b-f2eb1d914c53" />
+<img width="1297" height="838" alt="Image" src="https://github.com/user-attachments/assets/10ac7720-df67-45e3-b9f1-f0ed8bbfeed8" />
+<img width="1745" height="1078" alt="Image" src="https://github.com/user-attachments/assets/ecdd50b8-917b-4859-8aeb-07b6577d0a1c" />
 
 ## Tests
 
-27 automated tests (pytest) check the most important parts of the project: that features and LSTM input sequences only use information available at forecast time, the time-based split, the summer/winter time changes, Swedish holidays, MLflow tracking and that model training is repeatable. They use small synthetic data and run automatically with GitHub Actions on every push.
+28 automated tests (pytest) check the most important parts of the project: that features and LSTM input sequences only use information available at forecast time, the time-based split, the summer/winter time changes, Swedish holidays, MLflow tracking and that model training is repeatable. They use small synthetic data and run automatically with GitHub Actions on every push.
 
 To run them locally:
 
