@@ -29,7 +29,7 @@ All model runs are tracked with MLflow: the baselines, the four LightGBM version
 
 ## Tests
 
-27 automated tests (pytest) check the most important parts of the project: that features and LSTM input sequences only use information available at forecast time, the time-based split, the summer/winter time changes, Swedish holidays, MLflow tracking, and that model training is repeatable. They use small synthetic data and run automatically with GitHub Actions on every push.
+27 automated tests (pytest) check the most important parts of the project: that features and LSTM input sequences only use information available at forecast time, the time-based split, the summer/winter time changes, Swedish holidays, MLflow tracking and that model training is repeatable. They use small synthetic data and run automatically with GitHub Actions on every push.
 
 To run them locally:
 
