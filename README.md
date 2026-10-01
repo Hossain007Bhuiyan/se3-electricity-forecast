@@ -43,7 +43,7 @@ To run them locally:
 
 The PyTorch tests run as a separate command, because LightGBM and PyTorch must not be loaded in the same Python process on macOS.
 
-The badge at the top shows the result of the latest run; clicking it opens the list of all test runs on GitHub, where each run's steps and test results can be seen.
+The badge at the top shows the result of the latest test run. You can also [open all test runs on GitHub](https://github.com/Hossain007Bhuiyan/se3-electricity-forecast/actions/workflows/tests.yml), where each run's steps and test results can be seen.
 
 ## Next steps
 
