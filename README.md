@@ -1,6 +1,7 @@
 # SE3 Electricity Price Forecast
 
-[![tests](https://github.com/Hossain007Bhuiyan/se3-electricity-forecast/actions/workflows/tests.yml/badge.svg)](https://github.com/Hossain007Bhuiyan/se3-electricity-forecast/actions/workflows/tests.yml)
+<a href="https://github.com/Hossain007Bhuiyan/se3-electricity-forecast/actions/workflows/tests.yml"><img src="https://github.com/Hossain007Bhuiyan/se3-electricity-forecast/actions/workflows/tests.yml/badge.svg" alt="tests" height="28"></a>
+> Status: work in progress. Daily automated forecasts and a dashboard are being added.
 
 This project forecasts tomorrow's hourly electricity prices in Sweden's SE3 price zone (Stockholm region).
 
