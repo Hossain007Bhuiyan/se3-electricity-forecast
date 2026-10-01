@@ -1,0 +1,40 @@
+# Runs all automated tests on GitHub on every push to main and on every pull request.
+# The tests use small synthetic data, so no downloaded data is needed here.
+
+
+name: tests
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+# The workflow only needs to read the code
+permissions:
+  contents: read
+
+jobs:
+  tests:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30  # stop a stuck run instead of waiting for GitHub's 6-hour limit
+
+    steps:
+      - name: Check out the code
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9  # v9.0.0
+        with:
+          enable-cache: true  # reuse downloaded packages between runs
+
+      # --locked stops with an error if uv.lock does not match pyproject.toml, so GitHub always
+      # tests exactly the package versions that are committed. Python 3.12 is taken from .python-version.
+      - name: Install the exact package versions from uv.lock
+        run: uv sync --locked
+
+      - name: Run the main tests (everything except PyTorch)
+        run: uv run pytest
+
+      # A separate pytest process, because LightGBM and PyTorch must not run in the same process
+      - name: Run the PyTorch tests
+        run: uv run pytest tests_torch

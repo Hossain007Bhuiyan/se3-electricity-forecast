@@ -18,7 +18,7 @@ dependencies = [
     "pyarrow>=25.0.1",
     "requests>=2.34.2",
     "scikit-learn>=1.9.1",
-    "torch>=2.14.0",
+    "torch==2.14.0",
 ]
 
 [project.scripts]
@@ -35,3 +35,13 @@ dev = [
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
+
+# On Linux (GitHub Actions), use PyTorch's small CPU-only build instead of the large CUDA build.
+# macOS is not affected: it keeps using the normal PyTorch from PyPI.
+[tool.uv.sources]
+torch = [{ index = "pytorch-cpu", marker = "sys_platform == 'linux'" }]
+
+[[tool.uv.index]]
+name = "pytorch-cpu"
+url = "https://download.pytorch.org/whl/cpu"
+explicit = true
