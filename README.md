@@ -1,6 +1,11 @@
 # SE3 Electricity Price Forecast
 
-<a href="https://github.com/Hossain007Bhuiyan/se3-electricity-forecast/actions/workflows/tests.yml"><img src="https://github.com/Hossain007Bhuiyan/se3-electricity-forecast/actions/workflows/tests.yml/badge.svg" alt="tests" height="38"></a>
+# SE3 Electricity Price Forecast
+
+<p>
+  <a href="https://github.com/Hossain007Bhuiyan/se3-electricity-forecast/actions/workflows/tests.yml"><img src="https://github.com/Hossain007Bhuiyan/se3-electricity-forecast/actions/workflows/tests.yml/badge.svg" alt="tests" height="32"></a>
+</p>
+
 > Status: work in progress. Daily automated forecasts and a dashboard are being added.
 
 This project forecasts tomorrow's hourly electricity prices in Sweden's SE3 price zone (Stockholm region).
@@ -38,6 +43,8 @@ To run them locally:
     uv run pytest tests_torch
 
 The PyTorch tests run as a separate command, because LightGBM and PyTorch must not be loaded in the same Python process on macOS.
+
+The badge at the top shows the result of the latest run; clicking it opens the list of all test runs on GitHub, where each run's steps and test results can be seen.
 
 ## Next steps
 
