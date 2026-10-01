@@ -25,14 +25,20 @@ ARTIFACT_ROOT = ROOT / "mlartifacts"
 EXPERIMENT = "se3-electricity-forecast"
 
 
-# Returns the current Git commit and whether there are uncommitted changes, so every run
-# can be traced back to the exact code. Returns "unknown" if Git is not available.
+# Files that define what a run does: the code and the exact package versions
+CODE_PATHS = ["src", "pyproject.toml", "uv.lock"]
+
+
+# Returns the current Git commit and whether the code has uncommitted changes, so every run
+# can be traced back to the exact code. Only CODE_PATHS are checked: result files (results/,
+# figures/) are written by the runs themselves and must not count as changed code.
+# Returns "unknown" if Git is not available.
 def git_state():
     try:
         commit = subprocess.run(["git", "rev-parse", "HEAD"], cwd=ROOT, capture_output=True,
                                 text=True, check=True).stdout.strip()
-        changes = subprocess.run(["git", "status", "--porcelain", "--untracked-files=no"], cwd=ROOT,
-                                 capture_output=True, text=True, check=True).stdout.strip()
+        changes = subprocess.run(["git", "status", "--porcelain", "--untracked-files=no", "--", *CODE_PATHS],
+                                 cwd=ROOT, capture_output=True, text=True, check=True).stdout.strip()
         return commit, str(bool(changes))
     except (OSError, subprocess.CalledProcessError):
         return "unknown", "unknown"
