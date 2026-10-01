@@ -21,13 +21,13 @@ To understand how the models reach their forecasts, they were analysed with SHAP
 
 - The most important information is the price development over the last week, yesterday's price at the same hour, the temperature and the time of day.
 - Cold weather, high recent prices and the morning and evening hours raise the forecast. Wind, sunshine, weekends and holidays lower it.
-- Extreme price spikes remain the hardest part. For the most expensive hour of the test year (19 February 2026 at 08:00, 4.90 SEK/kWh), the best model forecast 1.82 SEK/kWh: it recognised the hour as expensive but predicted less than half of the actual price.
+- - Extreme price spikes remain the hardest part. For the most expensive hour of the test year (19 February 2026 at 08:00, 4.90 SEK/kWh), the best model forecast 1.75 SEK/kWh: it recognised the hour as expensive but predicted less than half of the actual price.
 
-SHAP values show how a model uses its inputs, not proven causes. Inputs that carry similar information, such as yesterday's price and the price history of the last week, share their importance between them. The SHAP charts explain a version of each model trained once before the test year, so their forecasts can differ slightly from the monthly retrained models above (for the hour above: 1.76 instead of 1.82 SEK/kWh). The charts are in the `figures` folder.
+SHAP values show how a model uses its inputs, not proven causes. Inputs that carry similar information, such as yesterday's price and the price history of the last week, share their importance between them. The SHAP charts explain a version of each model trained once before the test year, so their forecasts can differ slightly from the monthly retrained models above (for the hour above: 1.78 instead of 1.75 SEK/kWh). The charts are in the `figures` folder.
 
 ## Experiment tracking
 
-All model runs are tracked with MLflow: the baselines, the four LightGBM versions and the LSTM, on both the validation year and the test year. For every run, MLflow records its settings, its results (MAE, RMSE and the error for every month), its hourly predictions, the Git commit of the code and a fingerprint of the data. This makes all runs comparable side by side, and every result can be traced back to the exact code and data behind it. The tracking data is stored locally and is not part of this repository; the screenshots show the tracked runs.
+All model runs are tracked with MLflow: the baselines, the four LightGBM versions and the LSTM on the validation year and the baselines, the chosen LightGBM version and the LSTM on the test year. For every run, MLflow records its settings, its results (MAE, RMSE and the error for every month), its hourly predictions, the Git commit of the code and a fingerprint of the data. This makes all runs comparable side by side and every result can be traced back to the exact code and data behind it. The tracking data is stored locally and is not part of this repository; the screenshot shows the tracked runs.
 
 <img width="1297" height="838" alt="Image" src="https://github.com/user-attachments/assets/10ac7720-df67-45e3-b9f1-f0ed8bbfeed8" />
 <img width="1745" height="1078" alt="Image" src="https://github.com/user-attachments/assets/ecdd50b8-917b-4859-8aeb-07b6577d0a1c" />
