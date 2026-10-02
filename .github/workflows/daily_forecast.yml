@@ -1,0 +1,77 @@
+# Every morning: forecast tomorrow's hourly SE3 prices with the LSTM and update the live record.
+# The results are saved in the separate branch "forecast-data", never in main.
+name: daily forecast
+
+on:
+  schedule:
+    # 05:17 UTC = 07:17 Swedish summer time / 06:17 winter time, well before the 12:00 bidding
+    # deadline. Not on the full hour, when GitHub is busiest and scheduled runs are delayed most.
+    - cron: "17 5 * * *"
+  workflow_dispatch:  # adds a "Run workflow" button in the Actions tab
+
+# Needed to save the results in the forecast-data branch
+permissions:
+  contents: write
+
+# Never run two forecasts at the same time; a second run waits for the first one
+concurrency:
+  group: daily-forecast
+  cancel-in-progress: false
+
+jobs:
+  forecast:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+
+    steps:
+      - name: Check out the code
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
+
+      # The live/ folder is connected to the forecast-data branch. On the very first run the branch
+      # does not exist yet, so it is created as an empty branch with its own history (no code in it).
+      - name: Open the forecast-data branch in the live folder
+        run: |
+          if git ls-remote --exit-code --heads origin forecast-data > /dev/null; then
+            git fetch --depth=1 origin forecast-data:forecast-data
+            git worktree add live forecast-data
+          else
+            git worktree add --orphan -b forecast-data live
+            printf '%s\n' "# Live forecasts" "" \
+              "This branch is written automatically every morning by the daily forecast workflow." \
+              "- forecasts.csv: every forecast hour, with the LSTM and weekly_naive forecasts and, once published, the real price" \
+              "- summary.json: the live accuracy so far (only forecasts made before 12:00 Swedish time count)" \
+              "- model/lstm.pt: the LSTM trained for the current month" > live/README.md
+          fi
+
+      # The price history is kept between runs, so only the newest days are downloaded.
+      # If it is ever missing, daily.py simply downloads the full history again.
+      - name: Restore the downloaded price history
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9  # v6.1.0
+        with:
+          path: data/live
+          key: prices-${{ github.run_id }}
+          restore-keys: prices-
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9  # v9.0.0
+        with:
+          enable-cache: true
+
+      - name: Install the exact package versions from uv.lock
+        run: uv sync --locked
+
+      - name: Make the forecast
+        run: uv run python -m se3_electricity_forecast.daily
+
+      - name: Save the results in the forecast-data branch
+        run: |
+          cd live
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          if git diff --cached --quiet; then
+            echo "nothing new to save"
+          else
+            git commit -m "Daily forecast run $(date -u '+%Y-%m-%d %H:%M') UTC"
+            git push origin forecast-data
+          fi
