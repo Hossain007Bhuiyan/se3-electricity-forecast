@@ -42,6 +42,39 @@ def folders(tmp_path, monkeypatch):
     return tmp_path
 
 
+# A fake price API in the format of the real one: hourly prices before 1 Oct 2025,
+# 15-minute prices after that
+def fake_download_prices(start, end):
+    rows = []
+    day = start
+    while day <= end:
+        step = pd.Timedelta(minutes=15) if day >= date(2025, 10, 1) else pd.Timedelta(hours=1)
+        times = pd.date_range(pd.Timestamp(day, tz=TZ), pd.Timestamp(day + pd.Timedelta(days=1), tz=TZ),
+                              freq=step, inclusive="left")
+        rows += [{"SEK_per_kWh": 1.0, "EUR_per_kWh": 0.1, "time_start": t, "time_end": t + step} for t in times]
+        day += pd.Timedelta(days=1)
+    df = pd.DataFrame(rows)
+    df["time_start"] = pd.to_datetime(df["time_start"], utc=True)
+    df["time_end"] = pd.to_datetime(df["time_end"], utc=True)
+    return df, []
+
+
+def test_saved_prices_work_on_the_next_run(folders, monkeypatch):
+    # The second run reads the saved price file and adds a fresh download. The combined table
+    # must still work with a freshly downloaded weather forecast (this failed once, because the
+    # file and the download used two different time zone objects for UTC).
+    monkeypatch.setattr(daily.data_download, "START_DATE", date(2025, 9, 1))
+    monkeypatch.setattr(daily.data_download, "download_prices", fake_download_prices)
+    daily.update_prices(date(2025, 10, 10))
+    prices = daily.update_prices(date(2025, 10, 12))  # second run, uses the saved file
+    assert str(prices["time_utc"].dtype).startswith("datetime64")
+    assert prices["time_utc"].is_unique and len(prices) == (30 + 12) * 24
+    weather = make_weather(pd.date_range("2025-09-01", "2025-10-20", freq="h", tz="UTC"))
+    known = prices[prices["time_local"] < pd.Timestamp("2025-10-12", tz=TZ)]
+    rows = daily.day_features(known, weather, date(2025, 10, 12))
+    assert len(rows) == 24
+
+
 def test_day_features_match_the_training_features():
     # The live features of a day must be exactly the features the model was trained with,
     # even though the live version does not know that day's prices

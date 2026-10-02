@@ -40,6 +40,17 @@ FORECAST_URL = "https://api.open-meteo.com/v1/forecast"
 WEATHER_COLS = data_download.WEATHER_VARIABLES
 
 
+
+# A saved file and a fresh download can describe UTC with two different Python time zone objects.
+# Combining them would turn the times into plain objects, and later merges would fail. This
+# converts the times to one and the same UTC time zone, without changing any time.
+def to_same_utc(prices):
+    prices = prices.copy()
+    prices["time_utc"] = prices["time_utc"].dt.tz_convert("UTC")
+    prices["time_local"] = prices["time_utc"].dt.tz_convert(TZ)
+    return prices
+
+
 # Updates the local price history and returns it. The first time, everything since November 2022
 # is downloaded. After that, only the last two known days and the newest days are downloaded again,
 # which is much faster and kinder to the free price API.
@@ -48,9 +59,10 @@ def update_prices(end_day):
     old = pd.read_parquet(PRICES) if PRICES.exists() else None
     start = data_download.START_DATE if old is None else old["time_local"].max().date() - timedelta(days=2)
     raw, _ = data_download.download_prices(start, end_day)
-    new = data_download.to_hourly(raw)
+    new = to_same_utc(data_download.to_hourly(raw))
     if old is not None:
         # Keep the old hours before the re-downloaded part, then add the fresh download
+        old = to_same_utc(old)
         new = pd.concat([old[old["time_utc"] < new["time_utc"].min()], new], ignore_index=True)
     prices = new.sort_values("time_utc").reset_index(drop=True)
 
