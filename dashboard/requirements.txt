@@ -1,0 +1,9 @@
+# Packages for the online dashboard on Streamlit Community Cloud.
+# Pinned to the same versions as in uv.lock, so the online page runs exactly what was tested.
+streamlit==1.64.0
+plotly==7.1.0
+pandas==3.0.6
+numpy==2.5.3
+pyarrow==25.0.1
+requests==2.34.2
+protobuf==6.33.6
