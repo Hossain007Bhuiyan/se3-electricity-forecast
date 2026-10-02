@@ -53,8 +53,7 @@ The badge at the top shows the result of the latest test run. You can also [open
 
 ## Next steps
 
-- Daily forecasts: every morning, new data and a weather forecast are downloaded, tomorrow's 24 hourly prices are predicted and the forecasts are later compared with the actual prices
-- A dashboard showing the latest forecast and the live accuracy
-- Final documentation with the full results, limitations and an architecture diagram
+- LLM-powered forecasting assistant — Add an LLM layer that combines forecast results, SHAP explanations, weather and historical performance to generate natural-language daily insights, explain price movements and answer questions about the forecast.
+- Tool-using AI agent — Allow the LLM to query the forecasting API, historical results and model metrics to provide interactive analysis and automated forecast reports.
 
 Data sources: [elprisetjustnu.se](https://www.elprisetjustnu.se) for electricity prices and [Open-Meteo](https://open-meteo.com) for weather.
