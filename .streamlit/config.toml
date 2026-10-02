@@ -1,0 +1,10 @@
+# Dark theme for the dashboard, matching the colours used in dashboard/app.py
+[theme]
+base = "dark"
+primaryColor = "#22d3ee"
+backgroundColor = "#0b1020"
+secondaryBackgroundColor = "#111a33"
+textColor = "#e2e8f0"
+# Hide the developer buttons (like "Deploy") in the top-right corner of the page
+[client]
+toolbarMode = "minimal"

@@ -17,3 +17,6 @@ mlartifacts/
 
 # Live forecast results (on GitHub they are stored in their own branch)
 live/
+
+# Helper files Streamlit can install for AI coding assistants (machine-specific)
+.agents/
