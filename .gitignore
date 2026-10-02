@@ -14,3 +14,6 @@ data/
 # MLflow tracking data (local, machine-specific)
 mlflow.db
 mlartifacts/
+
+# Live forecast results (on GitHub they are stored in their own branch)
+live/
