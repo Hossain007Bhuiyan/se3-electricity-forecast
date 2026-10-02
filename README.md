@@ -21,7 +21,7 @@ To understand how the models reach their forecasts, they were analysed with SHAP
 
 - The most important information is the price development over the last week, yesterday's price at the same hour, the temperature and the time of day.
 - Cold weather, high recent prices and the morning and evening hours raise the forecast. Wind, sunshine, weekends and holidays lower it.
-- - Extreme price spikes remain the hardest part. For the most expensive hour of the test year (19 February 2026 at 08:00, 4.90 SEK/kWh), the best model forecast 1.75 SEK/kWh: it recognised the hour as expensive but predicted less than half of the actual price.
+- Extreme price spikes remain the hardest part. For the most expensive hour of the test year (19 February 2026 at 08:00, 4.90 SEK/kWh), the best model forecast 1.75 SEK/kWh: it recognised the hour as expensive but predicted less than half of the actual price.
 
 SHAP values show how a model uses its inputs, not proven causes. Inputs that carry similar information, such as yesterday's price and the price history of the last week, share their importance between them. The SHAP charts explain a version of each model trained once before the test year, so their forecasts can differ slightly from the monthly retrained models above (for the hour above: 1.78 instead of 1.75 SEK/kWh). The charts are in the `figures` folder.
 
