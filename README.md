@@ -15,6 +15,12 @@ The goal is to build a complete forecasting system, from collecting the data and
 
 The best model so far has a 34% lower average error (MAE) than a simple baseline forecast ("same hour yesterday") on a full year of unseen test data (Oct 2025 – Sep 2026).
 
+## Live dashboard
+
+**[se3-electricity-forecast.streamlit.app](https://se3-electricity-forecast.streamlit.app/)**
+
+The dashboard shows the newest forecast, how earlier forecasts compared with the real prices (live accuracy), a 3D view of the prices of the last 30 days and the results on the test year. It reads the results of the daily forecast run directly from GitHub, so it updates by itself. It is hosted for free on Streamlit Community Cloud: after 12 hours without visitors it goes to sleep, and the button "Yes, get this app back up!" starts it again within about a minute.
+
 ## What drives the forecasts
 
 To understand how the models reach their forecasts, they were analysed with SHAP values and permutation importance on the test year.
