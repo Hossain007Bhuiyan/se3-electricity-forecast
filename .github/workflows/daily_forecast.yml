@@ -4,9 +4,14 @@ name: daily forecast
 
 on:
   schedule:
-    # 05:17 UTC = 07:17 Swedish summer time / 06:17 winter time, well before the 12:00 bidding
-    # deadline. Not on the full hour, when GitHub is busiest and scheduled runs are delayed most.
-    - cron: "17 5 * * *"
+    # GitHub can start scheduled runs hours late, so the forecast is tried four times every morning:
+    # 02:17, 04:17, 06:17 and 08:17 UTC = 04:17-10:17 Swedish summer time (03:17-09:17 in winter),
+    # all before the 12:00 bidding deadline. The first forecast that is made counts; later runs
+    # find it already in the record and change nothing. Not on the full hour, when GitHub is busiest.
+    - cron: "17 2 * * *"
+    - cron: "17 4 * * *"
+    - cron: "17 6 * * *"
+    - cron: "17 8 * * *"
   workflow_dispatch:  # adds a "Run workflow" button in the Actions tab
 
 # Needed to save the results in the forecast-data branch
@@ -75,3 +80,4 @@ jobs:
             git commit -m "Daily forecast run $(date -u '+%Y-%m-%d %H:%M') UTC"
             git push origin forecast-data
           fi
+

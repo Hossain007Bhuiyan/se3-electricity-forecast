@@ -183,8 +183,9 @@ st.markdown(f"""
   by an LSTM neural network, before the 12:00 bidding deadline.</p>
   <span class="live"><span class="dot"></span>Live &middot; last forecast made {last_run:%a %d %b %Y, %H:%M:%S}
   Swedish time &middot; data checked {checked_at:%H:%M:%S}</span>
-  <p class="next">A new forecast is made every morning at about 07:17 Swedish time (06:17 in winter);
-  GitHub sometimes starts scheduled runs a little later. The data on this page is refreshed every 10 minutes.</p>
+  <p class="next">A new forecast is made early every morning: GitHub tries four times between 04:17 and 10:17
+  Swedish time (03:17 and 09:17 in winter), and the first forecast made counts. The data on this page is
+  refreshed every 10 minutes.</p>
 </div>
 """, unsafe_allow_html=True)
 
