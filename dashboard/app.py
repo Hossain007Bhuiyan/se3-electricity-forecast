@@ -19,6 +19,19 @@ st.markdown("""
 html, body, .stApp, .stMarkdown { font-family: 'Inter', sans-serif; }
 .stApp { background: radial-gradient(circle at 15% 0%, #1e1b4b 0%, #0b1020 45%, #050814 100%); color: #e2e8f0; }
 .block-container { padding-top: 2rem; max-width: 1250px; }
+
+@media (max-width: 640px) {
+  .block-container { padding: 1rem .75rem 2rem; max-width: 100%; }
+  .hero h1 { font-size: 1.8rem; line-height: 1.15; }
+  .hero p { font-size: .95rem; line-height: 1.45; }
+  .live { font-size: .8rem; line-height: 1.4; flex-wrap: wrap; }
+  .cards { grid-template-columns: 1fr; gap: 12px; perspective: none; }
+  .card { padding: 16px; transform: none; }
+  .card:hover { transform: none; }
+  .card .value { font-size: 1.7rem; }
+  .section h2 { font-size: 1.25rem; }
+}
+
 [data-testid="stHeader"] { background: rgba(11,16,32,.88); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
   border-bottom: 1px solid rgba(34,211,238,.25); }
 [data-testid="stTopNavLink"], [data-testid="stTopNavSection"] { color: #e2e8f0; }
