@@ -289,6 +289,25 @@ def about_page():
 {card("Tracking", "MLflow", "", "every run records its code commit and a fingerprint of its data")}
 </div>
 """, unsafe_allow_html=True)
+
+    section("Quality and automation", "Tested and run automatically",
+            "Continuous integration (CI) with GitHub Actions: on every push, GitHub installs the exact package "
+            "versions from uv.lock on a clean Linux machine and runs all automated tests. The badges below show "
+            "the live status of the latest runs.")
+    st.markdown(f"""
+<p>
+  <a href="{live_data.REPO_URL}/actions/workflows/tests.yml" target="_blank"><img alt="tests" height="28"
+    src="https://img.shields.io/github/actions/workflow/status/{live_data.REPO}/tests.yml?branch=main&style=for-the-badge&label=tests&logo=githubactions&logoColor=white"></a>
+  <a href="{live_data.REPO_URL}/actions/workflows/daily_forecast.yml" target="_blank"><img alt="daily forecast" height="28"
+    src="https://img.shields.io/github/actions/workflow/status/{live_data.REPO}/daily_forecast.yml?branch=main&style=for-the-badge&label=daily%20forecast&logo=githubactions&logoColor=white"></a>
+</p>
+<div class="cards">
+{card("Tests", "pytest", "", "no future information in any input, clock changes, holidays, MLflow tracking, the daily forecast and every dashboard page")}
+{card("CI", "Every push", "", "GitHub Actions runs the main tests and the PyTorch tests in separate processes, with the packages locked in uv.lock")}
+{card("Daily run", "Every morning", "", "a timer starts the forecast workflow at 06:05 and 08:05, with GitHub's own schedule as a backup")}
+</div>
+""", unsafe_allow_html=True)
+
     section("Links", "Code and data", "")
     st.markdown(f"""
 <div class="cards">
