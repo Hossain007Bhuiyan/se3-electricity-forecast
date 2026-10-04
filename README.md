@@ -75,62 +75,55 @@ All models were evaluated with **monthly walk-forward validation**: for every mo
 
 The project has three parts: a **research pipeline** that built and evaluated the models, a **daily production run** that forecasts every morning, and **continuous integration** that tests every change.
 
-**1. Research pipeline:** from raw data to a validated, explained model
-
-```mermaid
-flowchart LR
-    A["📥 <b>Data</b><br/>SE3 prices since Nov 2022<br/>Stockholm weather · holidays"] --> B["🧮 <b>Features</b><br/>18 inputs known<br/>the morning before"]
-    B --> C["🤖 <b>Models</b><br/>4 baselines<br/>LightGBM · LSTM"]
-    C --> D["📊 <b>Evaluation</b><br/>monthly walk-forward<br/>validation year → test year"]
-    D --> E["🔍 <b>Explainability</b><br/>SHAP values<br/>permutation importance"]
-    C -.-> F["📒 <b>MLflow</b><br/>15 tracked runs<br/>commit + data fingerprint"]
-
-    classDef data fill:#0e3a53,stroke:#22d3ee,color:#ffffff
-    classDef step fill:#2e2a5e,stroke:#a78bfa,color:#ffffff
-    classDef track fill:#3d2a12,stroke:#fbbf24,color:#ffffff
-    class A data
-    class B,C,D,E step
-    class F track
 ```
+1  RESEARCH PIPELINE  ·  from raw data to a validated, explained model
 
-**2. Daily production run:** every morning, before the 12:00 deadline
+ ┌───────────────┐   ┌───────────────┐   ┌───────────────┐   ┌───────────────┐   ┌───────────────┐
+ │      Data     │   │    Features   │   │     Models    │   │   Evaluation  │   │ Explainability│
+ │   SE3 prices  │──►│   18 inputs,  │──►│  4 baselines  │──►│    monthly    │──►│  SHAP values  │
+ │ since Nov 2022│   │ all known the │   │    LightGBM   │   │  walk-forward │   │  permutation  │
+ │    weather,   │   │ morning before│   │      LSTM     │   │  validation + │   │   importance  │
+ │    holidays   │   │               │   │               │   │   test year   │   │               │
+ └───────────────┘   └───────────────┘   └───────────────┘   └───────────────┘   └───────────────┘
+                                                 ┊
+                                                 ▼
+                                         ┌───────────────┐
+                                         │     MLflow    │
+                                         │15 tracked runs│
+                                         │ commit + data │
+                                         │  fingerprint  │
+                                         └───────────────┘
 
-```mermaid
-flowchart LR
-    T["⏰ <b>Timer</b><br/>cron-job.org<br/>06:05 · 08:05"] --> G["⚙️ <b>GitHub Actions</b><br/>new prices + weather forecast<br/>LSTM retrained monthly<br/>forecast for tomorrow"]
-    G --> R["🗃️ <b>Live record</b><br/>forecast-data branch<br/>forecasts.csv · summary.json"]
-    R --> S["📈 <b>Dashboard</b><br/>Streamlit · 7 pages<br/>live accuracy"]
-    B["🛟 <b>Backup</b><br/>GitHub schedule<br/>4 more tries"] -.-> G
-    M["📒 <b>MLflow export</b><br/>results/mlflow_runs.csv"] -.-> S
 
-    classDef trigger fill:#0e3a53,stroke:#22d3ee,color:#ffffff
-    classDef step fill:#2e2a5e,stroke:#a78bfa,color:#ffffff
-    classDef out fill:#123d2a,stroke:#22c55e,color:#ffffff
-    classDef track fill:#3d2a12,stroke:#fbbf24,color:#ffffff
-    class T,B trigger
-    class G step
-    class R,S out
-    class M track
+2  DAILY PRODUCTION RUN  ·  every morning, before the 12:00 deadline
+
+ ┌───────────────┐   ┌───────────────┐   ┌───────────────┐   ┌───────────────┐
+ │     Timer     │   │ GitHub Actions│   │  Live record  │   │   Dashboard   │
+ │  cron-job.org │──►│  new prices + │──►│ forecast-data │──►│   Streamlit   │
+ │  06:05, 08:05 │   │    weather    │   │     branch    │   │    7 pages    │
+ │               │   │ forecast, LSTM│   │ forecasts.csv │   │ live accuracy │
+ │               │   │   retrained   │   │  summary.json │   │               │
+ │               │   │    monthly    │   │               │   │               │
+ └───────────────┘   └───────────────┘   └───────────────┘   └───────────────┘
+                             ▲
+                             ┊
+                     ┌───────────────┐
+                     │     Backup    │
+                     │GitHub schedule│
+                     │  4 more tries │
+                     └───────────────┘
+
+
+3  CONTINUOUS INTEGRATION (CI)  ·  GitHub Actions, on every push and pull request
+
+ ┌───────────────┐   ┌───────────────┐   ┌───────────────┐   ┌───────────────┐   ┌───────────────┐
+ │    Push or    │   │ GitHub Actions│   │   Main tests  │   │ PyTorch tests │   │  Status badge │
+ │  pull request │──►│ CI on a clean │──►│    46 tests   │──►│   13 tests,   │──►│  green or red │
+ │               │   │ Linux machine │   │               │   │  own process  │   │               │
+ │               │   │    uv sync    │   │               │   │               │   │               │
+ │               │   │    --locked   │   │               │   │               │   │               │
+ └───────────────┘   └───────────────┘   └───────────────┘   └───────────────┘   └───────────────┘
 ```
-
-**3. Continuous integration:** on every push and pull request
-
-```mermaid
-flowchart LR
-    P["📤 <b>Push or pull request</b>"] --> U["📦 <b>uv sync --locked</b><br/>exact versions from uv.lock"]
-    U --> T1["🧪 <b>Main tests</b><br/>46 tests"]
-    T1 --> T2["🔥 <b>PyTorch tests</b><br/>13 tests, own process"]
-    T2 --> OK["✅ <b>Status badge</b><br/>green or red"]
-
-    classDef trigger fill:#0e3a53,stroke:#22d3ee,color:#ffffff
-    classDef step fill:#2e2a5e,stroke:#a78bfa,color:#ffffff
-    classDef out fill:#123d2a,stroke:#22c55e,color:#ffffff
-    class P trigger
-    class U,T1,T2 step
-    class OK out
-```
-
-In more detail:
 
 1. **Data.** SE3 day-ahead prices from [elprisetjustnu.se](https://www.elprisetjustnu.se) (since October 2025 they are published per 15 minutes and averaged per hour) and Stockholm weather from [Open-Meteo](https://open-meteo.com).
 2. **Features.** 18 inputs, all known on the morning before the forecast day: hour, weekday, month, weekend, Swedish holidays (including Midsommarafton, Julafton and Nyårsafton), prices from 1, 2 and 7 days before, yesterday's average, minimum, maximum and spread, the average of the last 7 days, and five weather variables.
