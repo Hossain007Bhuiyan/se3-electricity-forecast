@@ -26,7 +26,7 @@ Every day, the electricity prices for the next day are set in an auction that cl
 - **Result:** on a full year of unseen test data (October 2025 to September 2026), the LSTM's average error is **34% lower** than the best simple baseline, and it beat LightGBM in **11 of 12 months**.
 - **Explainability:** SHAP values and permutation importance show what drives each model's forecasts.
 - **Live system:** the forecast runs every morning; every forecast is saved and later compared with the real prices.
-- **Engineering:** experiment tracking with MLflow, 52 automated tests, continuous integration with GitHub Actions and a public dashboard.
+- **Engineering:** experiment tracking with MLflow, 59 automated tests, continuous integration with GitHub Actions and a public dashboard.
 
 ---
 
@@ -42,9 +42,9 @@ Every day, the electricity prices for the next day are set in an auction that cl
 | Model | Test-year results | all six models on the test year |
 | Model | Experiment tracking (MLflow) | every tracked run, with a link to its exact code commit |
 | Project | How it works | the four daily steps |
-| Project | Data and sources | where the data comes from and the rules behind every number |
+| Project | Data and sources | where the data comes from, the rules behind every number, and the live CI status |
 
-The dashboard is hosted for free on Streamlit Community Cloud. After 12 hours without visitors it goes to sleep; the button "Yes, get this app back up!" starts it again within about a minute.
+On phones, a **Menu** button and a row of page buttons replace the top menu, and the charts scroll with the page instead of zooming. The dashboard is hosted for free on Streamlit Community Cloud. After 12 hours without visitors it goes to sleep; the button "Yes, get this app back up!" starts it again within about a minute.
 
 ---
 
@@ -73,34 +73,71 @@ All models were evaluated with **monthly walk-forward validation**: for every mo
 
 ## 🏗️ How It Works
 
+The project has three parts: a **research pipeline** that built and evaluated the models, a **daily production run** that forecasts every morning, and **continuous integration** that tests every change.
+
+**1. Research pipeline:** from raw data to a validated, explained model
+
 ```mermaid
 flowchart LR
-    subgraph Research
-        P["Prices<br/>elprisetjustnu.se"] --> F["Features<br/>18 inputs"]
-        W["Weather<br/>Open-Meteo"] --> F
-        F --> M["Models<br/>baselines, LightGBM, LSTM"]
-        M --> E["Evaluation<br/>walk-forward, test year"]
-        E --> X["Explainability<br/>SHAP, permutation importance"]
-        M --> T["MLflow<br/>experiment tracking"]
-    end
-    subgraph Live["Live system"]
-        S["Timer<br/>06:05 and 08:05"] --> G["GitHub Actions<br/>daily forecast"]
-        G --> R["Live record<br/>forecast-data branch"]
-        R --> D["Streamlit<br/>dashboard"]
-    end
-    subgraph Quality
-        C["Every push"] --> Q["52 automated tests<br/>GitHub Actions"]
-    end
-    M -- "LSTM, retrained monthly" --> G
-    T -. "exported runs" .-> D
+    A["📥 <b>Data</b><br/>SE3 prices since Nov 2022<br/>Stockholm weather · holidays"] --> B["🧮 <b>Features</b><br/>18 inputs known<br/>the morning before"]
+    B --> C["🤖 <b>Models</b><br/>4 baselines<br/>LightGBM · LSTM"]
+    C --> D["📊 <b>Evaluation</b><br/>monthly walk-forward<br/>validation year → test year"]
+    D --> E["🔍 <b>Explainability</b><br/>SHAP values<br/>permutation importance"]
+    C -.-> F["📒 <b>MLflow</b><br/>15 tracked runs<br/>commit + data fingerprint"]
+
+    classDef data fill:#0e3a53,stroke:#22d3ee,color:#ffffff
+    classDef step fill:#2e2a5e,stroke:#a78bfa,color:#ffffff
+    classDef track fill:#3d2a12,stroke:#fbbf24,color:#ffffff
+    class A data
+    class B,C,D,E step
+    class F track
 ```
+
+**2. Daily production run:** every morning, before the 12:00 deadline
+
+```mermaid
+flowchart LR
+    T["⏰ <b>Timer</b><br/>cron-job.org<br/>06:05 · 08:05"] --> G["⚙️ <b>GitHub Actions</b><br/>new prices + weather forecast<br/>LSTM retrained monthly<br/>forecast for tomorrow"]
+    G --> R["🗃️ <b>Live record</b><br/>forecast-data branch<br/>forecasts.csv · summary.json"]
+    R --> S["📈 <b>Dashboard</b><br/>Streamlit · 7 pages<br/>live accuracy"]
+    B["🛟 <b>Backup</b><br/>GitHub schedule<br/>4 more tries"] -.-> G
+    M["📒 <b>MLflow export</b><br/>results/mlflow_runs.csv"] -.-> S
+
+    classDef trigger fill:#0e3a53,stroke:#22d3ee,color:#ffffff
+    classDef step fill:#2e2a5e,stroke:#a78bfa,color:#ffffff
+    classDef out fill:#123d2a,stroke:#22c55e,color:#ffffff
+    classDef track fill:#3d2a12,stroke:#fbbf24,color:#ffffff
+    class T,B trigger
+    class G step
+    class R,S out
+    class M track
+```
+
+**3. Continuous integration:** on every push and pull request
+
+```mermaid
+flowchart LR
+    P["📤 <b>Push or pull request</b>"] --> U["📦 <b>uv sync --locked</b><br/>exact versions from uv.lock"]
+    U --> T1["🧪 <b>Main tests</b><br/>46 tests"]
+    T1 --> T2["🔥 <b>PyTorch tests</b><br/>13 tests, own process"]
+    T2 --> OK["✅ <b>Status badge</b><br/>green or red"]
+
+    classDef trigger fill:#0e3a53,stroke:#22d3ee,color:#ffffff
+    classDef step fill:#2e2a5e,stroke:#a78bfa,color:#ffffff
+    classDef out fill:#123d2a,stroke:#22c55e,color:#ffffff
+    class P trigger
+    class U,T1,T2 step
+    class OK out
+```
+
+In more detail:
 
 1. **Data.** SE3 day-ahead prices from [elprisetjustnu.se](https://www.elprisetjustnu.se) (since October 2025 they are published per 15 minutes and averaged per hour) and Stockholm weather from [Open-Meteo](https://open-meteo.com).
 2. **Features.** 18 inputs, all known on the morning before the forecast day: hour, weekday, month, weekend, Swedish holidays (including Midsommarafton, Julafton and Nyårsafton), prices from 1, 2 and 7 days before, yesterday's average, minimum, maximum and spread, the average of the last 7 days, and five weather variables.
 3. **Models.** Four baselines (simple rules such as "same hour yesterday"); LightGBM in four versions (predicting the price or the change from yesterday, each with two loss functions) with fixed, untuned settings; and an LSTM that reads the last 168 hourly prices (7 days) and combines them with the other inputs in a small neural network.
 4. **Evaluation.** Monthly walk-forward validation on the validation year, then one final evaluation on the test year.
 5. **Explainability.** SHAP values (TreeSHAP for LightGBM, expected gradients with Captum for the LSTM) and permutation importance on the test year.
-6. **Tracking and tests.** Every run is tracked with MLflow; automated tests run on every push.
+6. **Tracking, tests and CI.** Every run is tracked with MLflow; continuous integration with GitHub Actions runs all automated tests on every push.
 7. **Live system.** Every morning, a timer starts the GitHub Actions workflow, which forecasts tomorrow and saves the result in the `forecast-data` branch, which the dashboard reads.
 
 ---
@@ -141,14 +178,22 @@ SHAP values show how a model uses its inputs, not proven causes. Inputs that car
 
 ---
 
-## 🧪 Experiment Tracking and Tests
+## 🧪 Experiment Tracking, Tests and CI
 
 **MLflow.** All 15 runs (the baselines, four LightGBM versions and the LSTM on the validation year; the baselines, LightGBM and the LSTM on the test year) are tracked with their settings, results, monthly errors, hourly predictions, Git commit and data fingerprint. The MLflow database is stored locally; an export of all runs is in [`results/mlflow_runs.csv`](results/mlflow_runs.csv) and on the dashboard's **Experiment tracking** page.
 
 <img width="1297" height="838" alt="MLflow: all tracked runs" src="https://github.com/user-attachments/assets/10ac7720-df67-45e3-b9f1-f0ed8bbfeed8" />
 <img width="1745" height="1078" alt="MLflow: comparison of runs" src="https://github.com/user-attachments/assets/ecdd50b8-917b-4859-8aeb-07b6577d0a1c" />
 
-**Tests.** 52 automated tests (pytest) check that no feature uses future information, the time-based split, the clock changes, Swedish holidays, the weather forecasts, MLflow tracking, repeatable model training, the daily forecast program and every page of the dashboard. They use small synthetic data and run with [GitHub Actions on every push](https://github.com/Hossain007Bhuiyan/se3-electricity-forecast/actions/workflows/tests.yml).
+**Tests.** 59 automated tests (pytest: 46 main tests and 13 PyTorch tests) check that no feature uses future information, the time-based split, the clock changes, Swedish holidays, the weather forecasts, MLflow tracking, repeatable model training, the daily forecast program and every page of the dashboard. They use small synthetic data, so no downloaded data is needed.
+
+**Continuous integration (CI).** On every push to `main` and on every pull request, [GitHub Actions](https://github.com/Hossain007Bhuiyan/se3-electricity-forecast/actions/workflows/tests.yml) runs the whole test suite on a clean Linux machine:
+
+1. installs the exact package versions from `uv.lock` (`uv sync --locked` stops if the lock file does not match `pyproject.toml`);
+2. runs the main tests;
+3. runs the PyTorch tests in a separate process, because LightGBM and PyTorch must not share a process.
+
+The **tests** badge at the top shows the result of the latest run. A second workflow, **daily forecast**, runs the live forecast every morning (see below).
 
 ---
 
