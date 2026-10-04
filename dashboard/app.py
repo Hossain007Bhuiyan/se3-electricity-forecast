@@ -58,6 +58,10 @@ html, body, .stApp, .stMarkdown { font-family: 'Inter', sans-serif; }
 .footer a { color: #22d3ee; }
 .card a { color: #22d3ee; }
 .mobile-menu { display: none; }
+[data-testid="stExpandSidebarButton"] { width: auto !important; padding: 6px 14px !important; border-radius: 999px !important;
+  background: rgba(34,211,238,.15) !important; border: 1px solid #22d3ee !important; }
+[data-testid="stExpandSidebarButton"] > * { display: none !important; }
+[data-testid="stExpandSidebarButton"]::after { content: "☰  Menu"; color: #f8fafc; font-weight: 600; font-size: .9rem; white-space: nowrap; }
 @media (max-width: 900px) {
   .mobile-menu { display: flex; gap: 8px; overflow-x: auto; margin-top: 14px; padding-bottom: 6px; -webkit-overflow-scrolling: touch; }
   .mobile-menu a { flex: 0 0 auto; padding: 8px 14px; border-radius: 999px; font-size: .85rem; text-decoration: none;
