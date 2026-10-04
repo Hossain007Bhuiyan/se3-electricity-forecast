@@ -10,6 +10,7 @@
 # committed to Git.
 
 import hashlib
+import json
 import platform
 import subprocess
 import tempfile
@@ -23,6 +24,9 @@ ROOT = Path(__file__).resolve().parents[2]
 TRACKING_URI = f"sqlite:///{ROOT / 'mlflow.db'}"
 ARTIFACT_ROOT = ROOT / "mlartifacts"
 EXPERIMENT = "se3-electricity-forecast"
+# Exported copies of all runs, committed to Git so the online dashboard can show them
+RUNS_CSV = ROOT / "results" / "mlflow_runs.csv"
+MONTHLY_CSV = ROOT / "results" / "mlflow_monthly_mae.csv"
 
 
 # Files that define what a run does: the code and the exact package versions
@@ -104,3 +108,47 @@ def log_results(preds, naive_mae):
         monthly.rename_axis("month").rename("mae").to_csv(Path(folder) / "monthly_mae.csv")
         preds.to_parquet(Path(folder) / "predictions.parquet", index=False)
         mlflow.log_artifacts(folder)
+
+
+# Exports every active run (deleted runs are left out) to two CSV files: one row per run with
+# its results, code commit and data fingerprint, and one row per run and month with the monthly
+# MAE. mlflow.db itself stays local; these files are what the online dashboard shows.
+def export_runs(runs_path=RUNS_CSV, monthly_path=MONTHLY_CSV):
+    mlflow.set_tracking_uri(TRACKING_URI)
+    client = mlflow.MlflowClient()
+    experiment = client.get_experiment_by_name(EXPERIMENT)
+    runs = client.search_runs([experiment.experiment_id], order_by=["attributes.start_time ASC"])
+    rows, monthly = [], []
+    for run in runs:
+        tags, metrics, params = run.data.tags, run.data.metrics, run.data.params
+        name, stage = tags.get("mlflow.runName"), tags.get("stage")
+        rows.append({
+            "run_name": name,
+            "stage": stage,
+            "model": tags.get("model"),
+            "mae": metrics.get("mae"),
+            "rmse": metrics.get("rmse"),
+            "rel_mae": metrics.get("rel_mae"),
+            "hours": int(metrics.get("hours", 0)),
+            "data_fingerprint": params.get("data_fingerprint"),
+            "git_commit": tags.get("git_commit"),
+            "uncommitted_changes": tags.get("uncommitted_changes"),
+            "started_utc": pd.Timestamp(run.info.start_time, unit="ms", tz="UTC"),
+            "run_id": run.info.run_id,
+            "params": json.dumps(dict(sorted(params.items()))),
+        })
+        with tempfile.TemporaryDirectory() as folder:
+            months = pd.read_csv(client.download_artifacts(run.info.run_id, "monthly_mae.csv", folder))
+        monthly.append(months.assign(run_name=name, stage=stage)[["run_name", "stage", "month", "mae"]])
+    table = pd.DataFrame(rows).sort_values(["stage", "mae"], kind="stable")
+    table.to_csv(runs_path, index=False)
+    pd.concat(monthly, ignore_index=True).to_csv(monthly_path, index=False)
+    return table
+
+
+# uv run python -m se3_electricity_forecast.tracking
+# Writes results/mlflow_runs.csv and results/mlflow_monthly_mae.csv from mlflow.db.
+if __name__ == "__main__":
+    exported = export_runs()
+    print(f"exported {len(exported)} runs to {RUNS_CSV.relative_to(ROOT)} and {MONTHLY_CSV.relative_to(ROOT)}")
+    print(exported[["run_name", "stage", "mae", "rel_mae", "hours"]].round(4).to_string(index=False))

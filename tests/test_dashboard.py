@@ -4,11 +4,12 @@
 import sys
 from datetime import date
 from pathlib import Path
-
 import numpy as np
 import pandas as pd
 import pytest
+import streamlit as st
 from streamlit.testing.v1 import AppTest
+
 
 DASHBOARD = Path(__file__).resolve().parents[1] / "dashboard"
 sys.path.insert(0, str(DASHBOARD))
@@ -60,7 +61,7 @@ def test_web_files_are_downloaded_with_requests(monkeypatch):
     table = live_data.load_test_results("https://example.com/test_results.csv")
     assert calls == ["https://example.com/test_results.csv"]
     assert table["mae"].tolist() == [0.2]
-    
+
 
 def test_latest_day_and_overview(record):
     day, rows = live_data.latest_day(record)
@@ -121,20 +122,51 @@ def test_fetch_recent_prices_skips_missing_days(monkeypatch):
     assert len(prices) == 3 * 24  # 30 Sep, 1 Oct and 2 Oct; 3 Oct is skipped
 
 
-def test_dashboard_page_runs(record, monkeypatch):
-    # Replace every download with test data, then run the whole page like a browser would
+# Replaces every download with test data, so the pages can run without internet
+@pytest.fixture
+def fake_downloads(record, monkeypatch):
     test_results = pd.DataFrame({"model": ["lstm", "lgbm_price_l1", "weekly_naive"], "hours": [8664] * 3,
                                  "mae": [0.21, 0.24, 0.32], "rmse": [0.30, 0.33, 0.44], "rel_mae": [0.66, 0.75, 1.0]})
     hours = pd.date_range(pd.Timestamp("2026-09-02", tz=TZ), pd.Timestamp("2026-10-03", tz=TZ), freq="h",
                           inclusive="left").tz_convert("UTC")
     recent = pd.DataFrame({"time_utc": hours, "price": np.linspace(0.1, 1.5, len(hours)), "time_local": hours.tz_convert(TZ)})
+    mlflow_runs = pd.DataFrame({"run_name": ["lstm", "weekly_naive"], "stage": ["test", "test"],
+                                "model": ["lstm", "baseline"], "mae": [0.21, 0.32], "rmse": [0.30, 0.44],
+                                "rel_mae": [0.66, 1.0], "hours": [8664, 8664], "data_fingerprint": ["abc", "abc"],
+                                "git_commit": ["c83b33d" + "0" * 33] * 2})
+    mlflow_monthly = pd.DataFrame({"run_name": ["lstm", "lstm", "weekly_naive", "weekly_naive"], "stage": "test",
+                                   "month": ["2025-10", "2025-11"] * 2, "mae": [0.2, 0.22, 0.3, 0.33]})
     monkeypatch.setattr(live_data, "load_record", lambda: record)
     monkeypatch.setattr(live_data, "load_test_results", lambda: test_results)
     monkeypatch.setattr(live_data, "fetch_recent_prices", lambda days: recent)
+    monkeypatch.setattr(live_data, "load_mlflow_runs", lambda: mlflow_runs)
+    monkeypatch.setattr(live_data, "load_mlflow_monthly", lambda: mlflow_monthly)
+    st.cache_data.clear()  # no cached data from an earlier test
 
+
+def test_dashboard_frame_and_first_page_run(fake_downloads):
+    # The whole app, like a browser opens it: the frame and the default page (tomorrow's forecast)
     page = AppTest.from_file(str(DASHBOARD / "app.py"), default_timeout=60)
     page.run()
     assert not page.exception and not page.error
-    # newest forecast, live accuracy, the chosen earlier day, the 3D landscape and the test results
-    assert len(page.get("plotly_chart")) == 5
-    assert "Saturday 03 October 2026" in page.selectbox[0].options  # the day with real prices can be chosen
+    assert len(page.get("plotly_chart")) == 1
+    assert "last forecast made" in " ".join(m.value for m in page.markdown)
+
+
+# Every page of the menu, run on its own: (page function, number of charts, number of tables)
+@pytest.mark.parametrize("page_name, charts, tables", [
+    ("tomorrow_page", 1, 0),
+    ("live_accuracy_page", 2, 0),     # the error per counted day, and the chosen day
+    ("landscape_page", 1, 0),
+    ("test_results_page", 1, 0),
+    ("experiments_page", 1, 1),       # the monthly MAE chart and the table of MLflow runs
+    ("how_it_works_page", 0, 0),
+    ("about_page", 0, 0),
+])
+def test_every_page_runs(fake_downloads, page_name, charts, tables):
+    script = f"import sys\nsys.path.insert(0, {str(DASHBOARD)!r})\nimport views\nviews.{page_name}()\n"
+    page = AppTest.from_string(script, default_timeout=60)
+    page.run()
+    assert not page.exception and not page.error and not page.info
+    assert len(page.get("plotly_chart")) == charts
+    assert len(page.dataframe) == tables

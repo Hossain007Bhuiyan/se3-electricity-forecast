@@ -13,6 +13,8 @@ REPO = "Hossain007Bhuiyan/se3-electricity-forecast"
 RAW = f"https://raw.githubusercontent.com/{REPO}"
 FORECASTS_URL = f"{RAW}/forecast-data/forecasts.csv"   # written every morning by GitHub Actions
 TEST_RESULTS_URL = f"{RAW}/main/results/test_results.csv"
+MLFLOW_RUNS_URL = f"{RAW}/main/results/mlflow_runs.csv"           # exported from mlflow.db
+MLFLOW_MONTHLY_URL = f"{RAW}/main/results/mlflow_monthly_mae.csv"
 REPO_URL = f"https://github.com/{REPO}"
 PRICE_API = "https://www.elprisetjustnu.se/api/v1/prices/{year}/{month:02d}-{day:02d}_SE3.json"
 
@@ -39,6 +41,15 @@ def load_record(url=FORECASTS_URL):
 
 
 def load_test_results(url=TEST_RESULTS_URL):
+    return read_csv(url)
+
+
+# The MLflow runs, as exported by "uv run python -m se3_electricity_forecast.tracking"
+def load_mlflow_runs(url=MLFLOW_RUNS_URL):
+    return read_csv(url)
+
+
+def load_mlflow_monthly(url=MLFLOW_MONTHLY_URL):
     return read_csv(url)
 
 
