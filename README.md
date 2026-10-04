@@ -168,13 +168,30 @@ Forecasting results can easily look better than they really are. These rules pre
 
 ## 🧠 What Drives the Forecasts
 
+Two methods explain the models, both on the test year:
+
+- **Permutation importance** answers *"which inputs matter most overall?"*: one input at a time is shuffled, and the increase in the error shows how much the model relies on it.
+- **SHAP values** answer *"why this forecast?"*: they split every single forecast into the contribution of each input, in SEK/kWh. LightGBM uses its built-in TreeSHAP; the LSTM uses expected gradients (Captum), an approximation of SHAP for neural networks.
+
+**What they show:**
+
 - The most important information is the price development over the last week, yesterday's price at the same hour, the temperature and the time of day.
 - Cold weather, high recent prices and the morning and evening hours raise the forecast. Wind, sunshine, weekends and holidays lower it.
 - Extreme price spikes remain the hardest part. For the most expensive hour of the test year (19 February 2026 at 08:00, 4.90 SEK/kWh), the LSTM forecast 1.75 SEK/kWh: it recognised the hour as expensive but predicted less than half of the actual price.
 
-<img src="figures/importance_comparison.png" alt="Permutation importance of LightGBM and the LSTM" width="800">
+**1. Permutation importance:** how much the test error rises when one input is shuffled (LightGBM left, LSTM right; `price_history_168h` is the LSTM's sequence of the last 168 hourly prices).
 
-SHAP values show how a model uses its inputs, not proven causes. Inputs that carry similar information, such as yesterday's price and the price history of the last week, share their importance. The SHAP charts explain a version of each model trained once before the test year, so their forecasts can differ slightly from the monthly retrained models (for the hour above: 1.78 instead of 1.75 SEK/kWh). All charts are in the [`figures`](figures) folder.
+<img src="figures/importance_comparison.png" alt="Permutation importance of LightGBM and the LSTM on the test year" width="800">
+
+**2. SHAP summary of the LSTM:** every dot is one hour of the test year. Dots to the right raise the forecast, dots to the left lower it; red means a high input value, blue a low one. For example, high wind (red) pushes the forecast down, and a high price yesterday (red) pushes it up.
+
+<img src="figures/shap_beeswarm_lstm.png" alt="SHAP summary of the LSTM on the test year" width="700">
+
+**3. SHAP for the most expensive hour:** why the LSTM forecast 1.78 SEK/kWh instead of its average of 0.54. The high prices of the last week (+0.52), yesterday's price at the same hour (2.10 SEK/kWh, +0.39) and the cold (−8.5 °C, +0.26) raised the forecast the most.
+
+<img src="figures/shap_waterfall_lstm.png" alt="SHAP explanation of the LSTM forecast for 19 February 2026 at 08:00" width="700">
+
+SHAP values show how a model uses its inputs, not proven causes. Inputs that carry similar information, such as yesterday's price and the price history of the last week, share their importance. The SHAP charts explain a version of each model trained once before the test year, so their forecasts can differ slightly from the monthly retrained models (for the hour above: 1.78 instead of 1.75 SEK/kWh). The same charts for LightGBM are in the [`figures`](figures) folder.
 
 ---
 
