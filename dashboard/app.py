@@ -19,7 +19,10 @@ st.markdown("""
 html, body, .stApp, .stMarkdown { font-family: 'Inter', sans-serif; }
 .stApp { background: radial-gradient(circle at 15% 0%, #1e1b4b 0%, #0b1020 45%, #050814 100%); color: #e2e8f0; }
 .block-container { padding-top: 2rem; max-width: 1250px; }
-[data-testid="stHeader"] { background: transparent; }
+[data-testid="stHeader"] { background: rgba(11,16,32,.88); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
+  border-bottom: 1px solid rgba(34,211,238,.25); }
+[data-testid="stTopNavLink"], [data-testid="stTopNavSection"] { color: #e2e8f0; }
+[data-testid="stTopNavPopoverBody"] { background: #111a33; border: 1px solid rgba(34,211,238,.25); border-radius: 12px; }
 .hero h1 { font-size: 2.8rem; font-weight: 800; margin: 0;
   background: linear-gradient(90deg, #22d3ee, #a78bfa, #f472b6, #22d3ee); background-size: 300% 100%;
   -webkit-background-clip: text; background-clip: text; color: transparent; animation: shine 8s linear infinite; }
@@ -66,7 +69,7 @@ st.markdown(f"""
   <p>Tomorrow's hourly day-ahead prices for Sweden's SE3 zone (Stockholm region), forecast every morning
   by an LSTM neural network, before the 12:00 bidding deadline.</p>
   <span class="live"><span class="dot"></span>Live &middot; last forecast made {last_run:%a %d %b %Y, %H:%M:%S}
-  Swedish time &middot; data checked {checked_at:%H:%M:%S}</span>
+  Swedish time &middot; page data refreshed {checked_at:%H:%M:%S}</span>
   <p class="next">A new forecast is made early every morning; the first forecast made before 12:00 counts.
   The data on this page is refreshed every 10 minutes.</p>
 </div>
