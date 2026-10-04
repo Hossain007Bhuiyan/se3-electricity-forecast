@@ -14,6 +14,7 @@ from streamlit.testing.v1 import AppTest
 DASHBOARD = Path(__file__).resolve().parents[1] / "dashboard"
 sys.path.insert(0, str(DASHBOARD))
 import live_data  # noqa: E402
+import views  # noqa: E402
 
 TZ = "Europe/Stockholm"
 
@@ -170,3 +171,30 @@ def test_every_page_runs(fake_downloads, page_name, charts, tables):
     assert not page.exception and not page.error and not page.info
     assert len(page.get("plotly_chart")) == charts
     assert len(page.dataframe) == tables
+
+def test_phones_are_recognised():
+    iphone = "Mozilla/5.0 (iPhone; CPU iPhone OS 18_0 like Mac OS X) AppleWebKit/605.1.15 Mobile/15E148 Safari/604.1"
+    android = "Mozilla/5.0 (Linux; Android 15; Pixel 9) AppleWebKit/537.36 Chrome/130.0 Mobile Safari/537.36"
+    mac = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 Version/18.0 Safari/605.1.15"
+    assert views.is_mobile(iphone) and views.is_mobile(android) and not views.is_mobile(mac)
+
+
+@pytest.mark.parametrize("page_name", ["tomorrow_page", "live_accuracy_page", "landscape_page",
+                                       "test_results_page", "experiments_page"])
+def test_charts_on_phones_scroll_instead_of_zoom(fake_downloads, monkeypatch, page_name):
+    monkeypatch.setattr(views, "is_mobile", lambda agent=None: True)
+    script = f"import sys\nsys.path.insert(0, {str(DASHBOARD)!r})\nimport views\nviews.{page_name}()\n"
+    page = AppTest.from_string(script, default_timeout=60)
+    page.run()
+    assert not page.exception
+    for chart in page.get("plotly_chart"):
+        assert '"dragmode":false' in chart.proto.spec.replace(" ", "")  # no drag-to-zoom
+        assert '"displayModeBar": false' in chart.proto.config            # no chart toolbar
+
+
+def test_phone_menu_lists_every_page(fake_downloads):
+    page = AppTest.from_file(str(DASHBOARD / "app.py"), default_timeout=60)
+    page.run()
+    menu = next(m.value for m in page.markdown if 'class="mobile-menu"' in m.value)
+    assert menu.count("<a ") == 7
+    assert 'href="/" target="_self" class="active">Tomorrow\'s forecast</a>' in menu  # the start page is marked

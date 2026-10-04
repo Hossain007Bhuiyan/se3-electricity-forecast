@@ -57,6 +57,13 @@ html, body, .stApp, .stMarkdown { font-family: 'Inter', sans-serif; }
 .footer { color: #64748b; font-size: .85rem; margin-top: 2.5rem; border-top: 1px solid rgba(255,255,255,.08); padding-top: 1rem; }
 .footer a { color: #22d3ee; }
 .card a { color: #22d3ee; }
+.mobile-menu { display: none; }
+@media (max-width: 900px) {
+  .mobile-menu { display: flex; gap: 8px; overflow-x: auto; margin-top: 14px; padding-bottom: 6px; -webkit-overflow-scrolling: touch; }
+  .mobile-menu a { flex: 0 0 auto; padding: 8px 14px; border-radius: 999px; font-size: .85rem; text-decoration: none;
+    color: #e2e8f0; background: rgba(255,255,255,.06); border: 1px solid rgba(255,255,255,.14); }
+  .mobile-menu a.active { background: rgba(34,211,238,.18); border-color: #22d3ee; color: #f8fafc; font-weight: 600; }
+}
 </style>
 """, unsafe_allow_html=True)
 
@@ -100,7 +107,7 @@ st.html("""
 """, unsafe_allow_javascript=True)
 
 # The menu at the top: three drop-down menus, each with its pages
-pages = st.navigation({
+menu = {
     "Forecast": [
         st.Page(views.tomorrow_page, title="Tomorrow's forecast", url_path="forecast", default=True),
         st.Page(views.live_accuracy_page, title="Live accuracy", url_path="live-accuracy"),
@@ -114,7 +121,18 @@ pages = st.navigation({
         st.Page(views.how_it_works_page, title="How it works", url_path="how-it-works"),
         st.Page(views.about_page, title="Data and sources", url_path="data-and-sources"),
     ],
-}, position="top")
+}
+pages = st.navigation(menu, position="top")
+
+# On phones, Streamlit folds the top menu into a side panel behind a small arrow in the corner,
+# which is easy to miss. Phones therefore also get a row of page buttons under the title (swipe
+# sideways for more); the CSS hides this row on larger screens, so computers look the same as before.
+links = "".join(
+    f'<a href="/{page.url_path}" target="_self" class="{"active" if page.url_path == pages.url_path else ""}">{page.title}</a>'
+    for group in menu.values() for page in group
+)
+st.markdown(f'<nav class="mobile-menu">{links}</nav>', unsafe_allow_html=True)
+
 pages.run()
 
 # Where the data comes from, and a link to the code, at the bottom of every page

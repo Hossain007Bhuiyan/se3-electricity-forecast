@@ -20,6 +20,24 @@ MODEL_NAMES = {
     "same_hour_last_week": "Baseline: same hour last week",
 }
 
+# Phones get charts without drag-to-zoom and without the chart toolbar, so a finger moving over
+# a chart scrolls the page instead of zooming the chart. The browser's User-Agent header tells
+# which kind of device asked for the page; computers keep the full chart controls.
+def is_mobile(agent=None):
+    if agent is None:
+        agent = st.context.headers.get("User-Agent", "")
+    return "Mobi" in agent or "Android" in agent
+
+
+def show_chart(fig, key):
+    if is_mobile():
+        fig.update_layout(dragmode=False)
+        fig.update_xaxes(fixedrange=True)
+        fig.update_yaxes(fixedrange=True)
+        fig.update_scenes(dragmode=False)  # the 3D landscape: turned only with the Rotate button
+        st.plotly_chart(fig, theme=None, key=key, config={"displayModeBar": False})
+    else:
+        st.plotly_chart(fig, theme=None, key=key)
 
 # Data is cached for 10 minutes, so the page stays fast and picks up each new morning run.
 # The real prices for the 3D view change at most once a day, so they are cached for an hour.
@@ -155,7 +173,7 @@ def tomorrow_page():
     section("Newest forecast", f"{day:%A %d %B %Y}",
             "The LSTM forecast and the simple weekly_naive baseline for every hour (Swedish time). "
             "The real prices appear here once they are published, around 13:00 the day before.")
-    st.plotly_chart(day_chart(rows), theme=None, key="newest")
+    show_chart(day_chart(rows), "newest")
 
 
 # Live accuracy: the error of every counted day, and any earlier day in detail
@@ -174,7 +192,7 @@ def live_accuracy_page():
         bars.add_trace(go.Bar(x=labels, y=errors["lstm_mae"], name="LSTM", marker_color=CYAN))
         bars.add_trace(go.Bar(x=labels, y=errors["weekly_naive_mae"], name="Baseline (weekly_naive)", marker_color=VIOLET))
         bars.update_yaxes(title="MAE (SEK/kWh)")
-        st.plotly_chart(style(bars, 380), theme=None, key="live_errors")
+        show_chart(style(bars, 380), "live_errors")
 
     # Any earlier day with real prices can be looked at in detail
     known_days = sorted(record.loc[record["actual"].notna(), "time_local"].dt.date.unique(), reverse=True)
@@ -184,7 +202,7 @@ def live_accuracy_page():
         counted = bool(chosen_rows["issued_before_noon"].all())
         st.caption("This forecast counts in the live accuracy." if counted
                    else "This forecast was made after 12:00 Swedish time, so it is shown but does not count.")
-        st.plotly_chart(day_chart(chosen_rows, 380), theme=None, key="chosen_day")
+        show_chart(day_chart(chosen_rows, 380), "chosen_day")
 
 
 # The real prices of the last 30 days as a 3D landscape
@@ -194,7 +212,7 @@ def landscape_page():
             "or press Rotate. Daily peaks in the morning and evening, and cheap nights and middays, stand out as ridges and valleys.")
     try:
         table = live_data.price_landscape(get_recent_prices())
-        st.plotly_chart(landscape_chart(table), theme=None, key="landscape")
+        show_chart(landscape_chart(table), "landscape")
     except Exception as error:
         show_problem("The recent prices could not be loaded from elprisetjustnu.se right now. Please try again later.", error)
 
@@ -214,7 +232,7 @@ def test_results_page():
         test_fig.update_xaxes(title="MAE (SEK/kWh)")
         style(test_fig, 380)
         test_fig.update_layout(hovermode="closest", showlegend=False, margin=dict(b=70))
-        st.plotly_chart(test_fig, theme=None, key="test_results")
+        show_chart(test_fig, "test_results")
     except Exception as error:
         show_problem("The test results could not be loaded from GitHub right now.", error)
 
@@ -249,7 +267,7 @@ def experiments_page():
                                        hovertemplate="%{y:.3f} SEK/kWh"))
         lines.update_yaxes(title="MAE (SEK/kWh)")
         lines.update_xaxes(title="Month of the test year")
-        st.plotly_chart(style(lines, 420), theme=None, key="mlflow_monthly")
+        show_chart(style(lines, 420), "mlflow_monthly")
         st.caption("Monthly MAE of every model on the test year, from the same MLflow runs. The full MLflow "
                    "interface runs locally; this page shows its exported data.")
     except Exception as error:
