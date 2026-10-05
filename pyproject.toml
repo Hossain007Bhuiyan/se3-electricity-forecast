@@ -1,10 +1,12 @@
 [project]
 name = "se3-electricity-forecast"
 version = "0.1.0"
-description = "Add your description here"
+description = "Day-ahead electricity price forecasts for Sweden's SE3 zone with LightGBM and an LSTM, tracked with MLflow and run every morning with GitHub Actions"
 readme = "README.md"
+license = "MIT"
+license-files = ["LICENSE"]
 authors = [
-    { name = "Hossain007Bhuiyan", email = "hossain.se@outlook.com" }
+    { name = "Md Motaher Hossain Bhuiyan", email = "hossain.se@outlook.com" }
 ]
 requires-python = ">=3.12"
 dependencies = [
@@ -20,9 +22,6 @@ dependencies = [
     "scikit-learn>=1.9.1",
     "torch==2.14.0",
 ]
-
-[project.scripts]
-se3-electricity-forecast = "se3_electricity_forecast:main"
 
 [build-system]
 requires = ["uv_build>=0.12.19,<0.13.0"]

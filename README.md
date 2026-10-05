@@ -330,6 +330,11 @@ se3-electricity-forecast/
 
 ---
 
+## 📄 License
+
+The code is licensed under the [MIT License](LICENSE). The electricity price and weather data belong to their providers and follow their own terms.
+
+---
 **Built by Md Motaher Hossain Bhuiyan**
 
 *Data sources: [elprisetjustnu.se](https://www.elprisetjustnu.se) for electricity prices and [Open-Meteo](https://open-meteo.com) for weather.*

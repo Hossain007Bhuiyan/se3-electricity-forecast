@@ -1,9 +1,7 @@
-"""Download SE3 electricity prices and Stockholm weather data.
-
-Prices: elprisetjustnu.se (free, no API key). Data before 1 Oct 2025 is hourly,
-after that it is 15-minute intervals, so we also build an hourly version.
-Weather: Open-Meteo historical archive (free, no API key).
-"""
+# Downloads SE3 electricity prices and Stockholm weather data.
+# Prices: elprisetjustnu.se (free, no API key). Data before 1 Oct 2025 is hourly,
+# after that it is 15-minute intervals, so an hourly version is built as well.
+# Weather: Open-Meteo historical archive (free, no API key).
 
 import time
 from datetime import date, timedelta
@@ -12,7 +10,7 @@ from pathlib import Path
 import pandas as pd
 import requests
 
-# ---------- Settings ----------
+# Settings
 ZONE = "SE3"
 START_DATE = date(2022, 11, 1)  # First day with data in the price API
 
@@ -40,7 +38,6 @@ RAW_DIR = PROJECT_ROOT / "data" / "raw"
 
 # Downloads all prices for one day. Returns an empty list if the day is not available.
 def fetch_prices_for_day(session: requests.Session, day: date) -> list[dict]:
-    """Download all prices for one day. Returns an empty list if missing."""
     url = PRICE_URL.format(year=day.year, month=day.month, day=day.day, zone=ZONE)
     response = session.get(url, timeout=30)
     if response.status_code == 404:
@@ -52,7 +49,6 @@ def fetch_prices_for_day(session: requests.Session, day: date) -> list[dict]:
 # Downloads prices for every day from start to end (both included).
 # Returns the prices as a table and a list of days that had no data.
 def download_prices(start: date, end: date) -> tuple[pd.DataFrame, list[date]]:
-    """Download prices for every day from start to end (inclusive)."""
     rows = []
     missing_days = []
 
@@ -91,23 +87,24 @@ def download_prices(start: date, end: date) -> tuple[pd.DataFrame, list[date]]:
     )
     return df, missing_days
 
+
 # Since 1 Oct 2025 prices come in 15-minute intervals. This averages them into hourly
 # prices, so the whole dataset has the same resolution. Older hourly data stays the same.
 def to_hourly(df: pd.DataFrame) -> pd.DataFrame:
-    """Average 15-minute prices into hourly prices (hourly data stays the same)."""
+    # floor("h") maps 12:00, 12:15, 12:30 and 12:45 to the same hour 12:00
     hourly = (
-        df.assign(time_utc=df["time_start"].dt.floor("h"))  ## floor("h") maps 12:00, 12:15, 12:30 and 12:45 to the same hour 12:00
+        df.assign(time_utc=df["time_start"].dt.floor("h"))
         .groupby("time_utc", as_index=False)[["SEK_per_kWh", "EUR_per_kWh"]]
         .mean()
         .rename(columns={"SEK_per_kWh": "price_sek_kwh", "EUR_per_kWh": "price_eur_kwh"})
     )
-    hourly["time_local"] = hourly["time_utc"].dt.tz_convert("Europe/Stockholm")  ## Keep Swedish local time as well, since daily habits follow the local clock
+    # Keep Swedish local time as well, since daily habits follow the local clock
+    hourly["time_local"] = hourly["time_utc"].dt.tz_convert("Europe/Stockholm")
     return hourly
 
 
 # Downloads hourly historical weather for Stockholm in a single request.
 def download_weather(start: date, end: date) -> pd.DataFrame:
-    """Download hourly historical weather for Stockholm in one request."""
     params = {
         "latitude": STOCKHOLM_LAT,
         "longitude": STOCKHOLM_LON,
@@ -126,18 +123,18 @@ def download_weather(start: date, end: date) -> pd.DataFrame:
     return df[["time_utc", *WEATHER_VARIABLES]]
 
 
-# ---------- Main ----------
+# Downloads everything and saves it in data/raw/
 def main() -> None:
     RAW_DIR.mkdir(parents=True, exist_ok=True)
     today = date.today()
     tomorrow = today + timedelta(days=1)
 
-  # Try up to tomorrow, since tomorrow's prices exist after about 13:00
+    # Try up to tomorrow, since tomorrow's prices exist after about 13:00
     print(f"1/2 Downloading {ZONE} prices from {START_DATE} to {tomorrow}")
     print("    This takes about 3-6 minutes...")
     prices_raw, missing_days = download_prices(START_DATE, tomorrow)
     prices_hourly = to_hourly(prices_raw)
-        # Save both versions: the raw one for checks, the hourly one for modelling
+    # Save both versions: the raw one for checks, the hourly one for modelling
     prices_raw.to_parquet(RAW_DIR / "prices_se3_raw.parquet", index=False)
     prices_hourly.to_parquet(RAW_DIR / "prices_se3_hourly.parquet", index=False)
     print(f"    Saved {len(prices_raw):,} raw rows and {len(prices_hourly):,} hourly rows")
