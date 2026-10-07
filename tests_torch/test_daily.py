@@ -39,6 +39,7 @@ def folders(tmp_path, monkeypatch):
     monkeypatch.setattr(daily, "MODEL", tmp_path / "live" / "model" / "lstm.pt")
     monkeypatch.setattr(daily, "RECORD", tmp_path / "live" / "forecasts.csv")
     monkeypatch.setattr(daily, "SUMMARY", tmp_path / "live" / "summary.json")
+    monkeypatch.setattr(daily, "INPUTS", tmp_path / "live" / "inputs.csv")
     return tmp_path
 
 
@@ -151,6 +152,13 @@ def test_full_daily_run_without_internet(folders, monkeypatch):
     assert record["issued_before_noon"].all() and record["actual"].isna().all()
     assert daily.load_model()[2] == "2025-10"
 
+    # The inputs of every forecast hour are saved too, exactly as the model used them
+    inputs = daily.read_inputs()
+    assert inputs["time_utc"].equals(record["time_utc"])
+    expected = daily.day_features(prices[prices["time_local"] < pd.Timestamp("2025-10-21", tz=TZ)], weather, date(2025, 10, 21))
+    assert np.allclose(inputs[FEATURE_COLS].to_numpy(float), expected[FEATURE_COLS].to_numpy(float))
+
     # Running again for the same day must not add or change anything
     daily.main(now=pd.Timestamp("2025-10-20 06:30", tz="UTC"))
     assert daily.read_record()["lstm"].equals(record["lstm"])
+    assert daily.read_inputs()["issued_at_utc"].eq(pd.Timestamp("2025-10-20 05:30", tz="UTC")).all()  # first inputs kept

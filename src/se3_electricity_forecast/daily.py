@@ -35,6 +35,7 @@ PRICES = DATA / "prices_se3_hourly.parquet"
 MODEL = LIVE / "model" / "lstm.pt"
 RECORD = LIVE / "forecasts.csv"
 SUMMARY = LIVE / "summary.json"
+INPUTS = LIVE / "inputs.csv"                        # the model inputs of every forecast hour
 
 FORECAST_URL = "https://api.open-meteo.com/v1/forecast"
 WEATHER_COLS = data_download.WEATHER_VARIABLES
@@ -182,6 +183,27 @@ def update_record(record, forecast, prices):
     return record.sort_values("time_utc").reset_index(drop=True)
 
 
+# Adds the model inputs of new forecast hours to the saved inputs. Like the record, the first
+# inputs for each hour are kept, so they always belong to the forecast that counts. The monitoring
+# uses them to check whether the inputs drift away from what the model was trained on.
+def update_inputs(saved, new):
+    if saved is not None:
+        new = new[~new["time_utc"].isin(saved["time_utc"])]
+        new = pd.concat([saved, new], ignore_index=True)
+    return new.sort_values("time_utc").reset_index(drop=True)
+
+
+# Reads the saved inputs from CSV, with the times turned back into timestamps
+def read_inputs():
+    if not INPUTS.exists():
+        return None
+    inputs = pd.read_csv(INPUTS)
+    inputs["time_utc"] = pd.to_datetime(inputs["time_utc"], utc=True)
+    inputs["time_local"] = inputs["time_utc"].dt.tz_convert(TZ)
+    inputs["issued_at_utc"] = pd.to_datetime(inputs["issued_at_utc"], utc=True)
+    return inputs
+
+
 # Live accuracy so far, using only hours whose real price is known and whose forecast was made
 # before 12:00 Swedish time on the day before (when bids for the day-ahead market close).
 def summarize(record):
@@ -230,6 +252,7 @@ def main(now=None):
     # Inputs for tomorrow: published prices only, plus the newest weather forecast
     known = prices[prices["time_local"] < pd.Timestamp(day, tz=TZ)].reset_index(drop=True)
     rows = day_features(known, download_weather_forecast(), day)
+    inputs = rows[["time_utc", "time_local", *FEATURE_COLS]].assign(issued_at_utc=now)
     rows = train_lstm.add_sequence_end(train_lstm.add_cyclical(rows), known)
 
     forecast = pd.DataFrame({
@@ -247,6 +270,7 @@ def main(now=None):
     record = update_record(read_record(), forecast, prices)
     LIVE.mkdir(parents=True, exist_ok=True)
     record.to_csv(RECORD, index=False)
+    update_inputs(read_inputs(), inputs).to_csv(INPUTS, index=False)
     summary = summarize(record)
     SUMMARY.write_text(json.dumps(summary, indent=2) + "\n")
     print()
