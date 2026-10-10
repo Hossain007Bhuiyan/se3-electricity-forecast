@@ -1,5 +1,5 @@
 {
-  "checked_at_utc": "2026-10-10T10:40:58.767880+00:00",
+  "checked_at_utc": "2026-10-10T15:57:17.837900+00:00",
   "checks": {
     "deadline": {
       "status": "ok",
@@ -7,9 +7,12 @@
       "message": "The forecast for 2026-10-11 was made at 02:54, before 12:00."
     },
     "error": {
-      "status": "waiting",
-      "days": 6,
-      "message": "6 of 7 counted days so far. The check starts after 7 days."
+      "status": "ok",
+      "days": 7,
+      "lstm_mae": 0.28104404402570654,
+      "weekly_naive_mae": 0.5433625595238095,
+      "limit": 0.3194472476255649,
+      "message": "LSTM MAE of the last 7 counted days: 0.281 SEK/kWh, within the limit of 0.319 (baseline: 0.543)."
     },
     "drift": {
       "status": "waiting",
