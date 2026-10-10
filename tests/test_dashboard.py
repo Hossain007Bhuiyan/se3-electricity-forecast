@@ -232,3 +232,15 @@ def test_run_log_is_read_newest_first(monkeypatch):
     runs = live_data.load_run_log("https://example.com/run_log.jsonl")
     assert runs["status"].tolist() == ["failed", "forecast saved"]
     assert str(runs["started"].dt.tz) == TZ
+
+
+def test_range_coverage_and_band(record):
+    assert live_data.range_coverage(record) is None  # no ranges yet
+    ranged = record.assign(lstm_low=record["actual"] - 0.05, lstm_high=record["actual"] + 0.05)
+    ranged.loc[ranged.index[:12], "lstm_high"] = ranged["actual"].iloc[:12] - 0.01  # 12 hours miss
+    hours, share = live_data.range_coverage(ranged)
+    assert hours == 24 and share == 0.5  # only the 24 counted hours of the first day
+    fig = views.day_chart(ranged.iloc[:24])
+    assert fig.data[1].name == "80% range" and fig.data[1].fill == "tonexty"  # the band is drawn first
+    lstm = next(t for t in fig.data if t.name == "LSTM forecast")
+    assert "80% range" in lstm.hovertemplate  # the LSTM line shows the range when hovered

@@ -137,6 +137,14 @@ def test_record_keeps_the_first_forecast_and_fills_real_prices():
     summary = daily.summarize(record)
     assert summary["hours"] == 24 and summary["days"] == 1
     assert np.isclose(summary["lstm_mae"], 0.1) and np.isclose(summary["rel_mae"], 0.5)
+    assert "range_coverage" not in summary  # these forecasts have no ranges
+
+    # With ranges: the real price is 0.1 below the forecast, so a range of +-0.05 misses every
+    # hour and a range of +-0.2 contains every hour
+    narrow = record.assign(lstm_low=record["lstm"] - 0.05, lstm_high=record["lstm"] + 0.05)
+    wide = record.assign(lstm_low=record["lstm"] - 0.2, lstm_high=record["lstm"] + 0.2)
+    assert daily.summarize(narrow)["range_coverage"] == 0 and daily.summarize(wide)["range_coverage"] == 1
+    assert daily.summarize(wide)["range_hours"] == 24
 
 
 def test_full_daily_run_without_internet(folders, monkeypatch):
@@ -153,6 +161,11 @@ def test_full_daily_run_without_internet(folders, monkeypatch):
     assert (record["time_local"].dt.date == date(2025, 10, 21)).all()
     assert record["issued_before_noon"].all() and record["actual"].isna().all()
     assert daily.load_model()[2] == "2025-10"
+
+    # Every forecast has its 80% range, calculated with the saved calibration
+    cal = json.loads(daily.intervals.CALIBRATION.read_text())
+    assert np.allclose(record["lstm_low"], record["lstm"] + cal["q_low"])
+    assert np.allclose(record["lstm_high"], record["lstm"] + cal["q_high"])
 
     # The inputs of every forecast hour are saved too, exactly as the model used them
     inputs = daily.read_inputs()

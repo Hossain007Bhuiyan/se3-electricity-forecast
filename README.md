@@ -26,7 +26,7 @@ Every day, the electricity prices for the next day are set in an auction that cl
 - **Result:** on a full year of unseen test data (October 2025 to September 2026), the LSTM's average error is **34% lower** than the best simple baseline, and it beat LightGBM in **11 of 12 months**.
 - **Explainability:** SHAP values and permutation importance show what drives each model's forecasts.
 - **Live system:** the forecast runs every morning; every forecast is saved and later compared with the real prices.
-- **Engineering:** experiment tracking with MLflow, 70 automated tests, continuous integration with GitHub Actions, daily monitoring with alerts and a public dashboard.
+- **Engineering:** experiment tracking with MLflow, 77 automated tests, continuous integration with GitHub Actions, daily monitoring with alerts and a public dashboard.
 
 ---
 
@@ -36,8 +36,8 @@ Every day, the electricity prices for the next day are set in an auction that cl
 
 | Menu | Page | What it shows |
 |---|---|---|
-| Forecast | Tomorrow's forecast | the key numbers and all 24 hours, with the real prices once published |
-| Forecast | Live accuracy | the overall live error, its 7- and 28-day trend, the last 30 counted days and any earlier day in detail |
+| Forecast | Tomorrow's forecast | the key numbers and all 24 hours with their 80% range, plus the real prices once published |
+| Forecast | Live accuracy | the overall live error, how often the real price fell inside the 80% range, the 7- and 28-day trend, the last 30 counted days and any earlier day in detail |
 | Forecast | Price landscape (3D) | the real prices of the last 30 days as a rotatable 3D surface |
 | Model | Test-year results | all six models on the test year |
 | Model | Experiment tracking (MLflow) | every tracked run, with a link to its exact code commit |
@@ -67,7 +67,13 @@ All models were evaluated with **monthly walk-forward validation**: for every mo
 - The LSTM had the lowest error in 11 of the 12 test months (LightGBM was better in April 2026).
 - A Diebold-Mariano test on the daily errors (with a Newey-West correction for 7 days) gives a statistic of **−5.82**: the LSTM's advantage over LightGBM is clearly significant.
 - All model choices were made on the **validation year** (October 2024 to September 2025), where the LSTM also had the lowest error (MAE 0.1989, rel_mae 0.67), ahead of the best of four LightGBM versions (0.2143, rel_mae 0.72).
+**Prediction intervals.** Every live forecast also gets an 80% range, built with split conformal prediction from the LSTM's own earlier errors (no new model is trained). Three versions were compared on the validation year and the one with the lowest interval score was chosen before the test year was used:
+| | Hours inside the range (target 80%) | Inside, in the 5% most expensive hours | Average width | Interval score |
+|---|---:|---:|---:|---:|
+| Validation year | 78.0% | 22.4% | 0.62 SEK/kWh | 1.18 |
+| Test year | 76.8% | 38.3% | 0.59 SEK/kWh | 1.08 |
 
+The ranges describe normal uncertainty well but are slightly too narrow and most extreme spikes still fall outside them. Versions whose width grew with yesterday's price swings covered spikes better but made every range much wider, which scored worse overall.
 **Live results:** real forecasts have been made every morning since October 2026. Their accuracy, counting only forecasts made before the 12:00 deadline, is on the [dashboard](https://se3-electricity-forecast.streamlit.app/) and in [`summary.json`](https://github.com/Hossain007Bhuiyan/se3-electricity-forecast/blob/forecast-data/summary.json). A few weeks of live data are needed before they can be compared fairly with the test year.
 
 ---
@@ -119,7 +125,7 @@ The project has three parts: a **research pipeline** that built and evaluated th
 
  ┌───────────────┐   ┌───────────────┐   ┌───────────────┐   ┌───────────────┐   ┌───────────────┐
  │    Push or    │   │ GitHub Actions│   │   Main tests  │   │ PyTorch tests │   │  Status badge │
- │  pull request │──►│ CI on a clean │──►│    56 tests   │──►│   14 tests,   │──►│  green or red │
+ │  pull request │──►│ CI on a clean │──►│    63 tests   │──►│   14 tests,   │──►│  green or red │
  │               │   │ Linux machine │   │               │   │  own process  │   │               │
  │               │   │    uv sync    │   │               │   │               │   │               │
  │               │   │    --locked   │   │               │   │               │   │               │
@@ -196,7 +202,7 @@ SHAP values show how a model uses its inputs, not proven causes. Inputs that car
 <img width="1297" height="838" alt="MLflow: all tracked runs" src="https://github.com/user-attachments/assets/10ac7720-df67-45e3-b9f1-f0ed8bbfeed8" />
 <img width="1745" height="1078" alt="MLflow: comparison of runs" src="https://github.com/user-attachments/assets/ecdd50b8-917b-4859-8aeb-07b6577d0a1c" />
 
-**Tests.** 70 automated tests (pytest: 56 main tests and 13 PyTorch tests) check that no feature uses future information, the monitoring checks, the time-based split, the clock changes, Swedish holidays, the weather forecasts, MLflow tracking, repeatable model training, the daily forecast program and every page of the dashboard. They use small synthetic data, so no downloaded data is needed.
+**Tests.** 77 automated tests (pytest: 63 main tests and 14 PyTorch tests) check that no feature uses future information, the monitoring checks, the time-based split, the clock changes, Swedish holidays, the weather forecasts, MLflow tracking, repeatable model training, the daily forecast program and every page of the dashboard. They use small synthetic data, so no downloaded data is needed.
 
 **Continuous integration (CI).** On every push to `main` and on every pull request, [GitHub Actions](https://github.com/Hossain007Bhuiyan/se3-electricity-forecast/actions/workflows/tests.yml) runs the whole test suite on a clean Linux machine:
 
@@ -213,7 +219,7 @@ The **tests** badge at the top shows the result of the latest run. A second work
 | | Details |
 |---|---|
 | **When** | An external timer ([cron-job.org](https://cron-job.org)) starts the forecast at 06:05 and 08:05 Swedish time. GitHub's own schedule runs four more times each morning as a backup, because GitHub can delay or skip scheduled runs. The first forecast made counts; later runs do not change it. |
-| **What** | The workflow downloads the newest prices and a weather forecast, retrains the LSTM at the start of each month, forecasts tomorrow's 24 hours with the LSTM and the `weekly_naive` baseline, and fills in the real prices of earlier forecasts. |
+| **What** | The workflow downloads the newest prices and a weather forecast, retrains the LSTM at the start of each month, forecasts tomorrow's 24 hours with the LSTM (with an 80% range) and the `weekly_naive` baseline and fills in the real prices of earlier forecasts. |
 | **Where** | The [`forecast-data`](https://github.com/Hossain007Bhuiyan/se3-electricity-forecast/tree/forecast-data) branch: `forecasts.csv` (every forecast hour with the real price) and `summary.json` (the live accuracy). |
 | **Run log** | Every daily run adds one line to `run_log.jsonl` in the forecast-data branch: when it started, what it did, whether the model was retrained, how long it took and the error message if it failed. The dashboard shows the last 14 runs. |
 | **Monitoring** | Every day after 12:00, a second workflow checks that tomorrow's forecast was made before 12:00, that the live error of the last 7 counted days stays below a limit and that the model inputs have not drifted away from the test year. Every alert opens a GitHub issue. The limits come from the test year and are fixed in `results/monitoring_reference.json`. |
@@ -285,6 +291,8 @@ uv run streamlit run dashboard/app.py                                  # the das
 uv run mlflow ui --backend-store-uri sqlite:///mlflow.db --port 5001   # the MLflow interface
 uv run python -m se3_electricity_forecast.tracking                     # export MLflow runs for the dashboard
 uv run python -m se3_electricity_forecast.monitor                      # run the monitoring checks on the live record
+uv run python -m se3_electricity_forecast.intervals                    # compare the 80% range versions on the validation year
+uv run python -m se3_electricity_forecast.intervals test               # check the chosen version on the test year (done once)
 ```
 
 ---
@@ -304,8 +312,9 @@ se3-electricity-forecast/
 │   ├── final_test.py         final evaluation on the test year
 │   ├── explain.py            SHAP values and permutation importance
 │   ├── tracking.py           MLflow tracking and export
-│   ├── daily.py the daily live forecast
-│   ├── monitor.py daily monitoring checks
+│   ├── daily.py              the daily live forecast
+│   ├── intervals.py          80% ranges around the forecasts
+│   └── monitor.py            daily monitoring checks
 ├── dashboard/                Streamlit app (app.py, views.py, live_data.py)
 ├── tests/                    main tests
 ├── tests_torch/              PyTorch tests
@@ -332,7 +341,7 @@ se3-electricity-forecast/
 
 The next upgrades, in this order. Each one starts after a few weeks of live data, because it needs that history to be evaluated fairly.
 
-1. **Probabilistic forecasts.** A price range for every hour instead of a single number (for example an 80% interval), evaluated with pinball loss and interval coverage. This targets the main weakness of the current model: extreme price spikes.
+1. **Adaptive prediction intervals.** Ranges that adjust every day to how often the real price fell outside them, with separate ranges for different times of day. The current ranges are slightly too narrow (77% instead of 80% on the test year). New versions are chosen on the validation year and judged on the live record.
 2. **Market data and a challenger model.** A new model with wind and solar production forecasts, nuclear availability, hydro reservoir levels and cross-border flows from the ENTSO-E Transparency Platform. It runs next to the LSTM on the live data and replaces it only if it is better over several weeks.
 3. **LLM assistant with tools.** An assistant that answers questions about the forecast, explains price movements with the SHAP values and writes daily summaries. It gets every number from the forecast data through tools and never makes numbers up.
 

@@ -91,6 +91,16 @@ def daily_errors(record):
                  weekly_naive_mae=("naive_error", "mean"))
             .reset_index())
 
+# How many counted hours have an 80% range, and the share of them whose real price fell inside.
+# None while no counted forecast has a range yet.
+def range_coverage(record):
+    if "lstm_low" not in record:
+        return None
+    done = record[record["actual"].notna() & record["issued_before_noon"] & record["lstm_low"].notna()]
+    if done.empty:
+        return None
+    inside = (done["actual"] >= done["lstm_low"]) & (done["actual"] <= done["lstm_high"])
+    return int(len(done)), float(inside.mean())
 
 # MAE over every window of `days` counted days in a row, weighted by hours, for the LSTM and the
 # baseline. Empty until there are at least `days` counted days.

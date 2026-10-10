@@ -22,7 +22,7 @@ import pandas as pd
 import requests
 import torch
 
-from se3_electricity_forecast import data_download, train_lstm
+from se3_electricity_forecast import data_download, intervals, train_lstm
 from se3_electricity_forecast.baselines import baseline_predictions
 from se3_electricity_forecast.evaluate import TZ
 from se3_electricity_forecast.features import (
@@ -217,6 +217,13 @@ def summarize(record):
         lstm_mae = float((done["actual"] - done["lstm"]).abs().mean())
         naive_mae = float((done["actual"] - done["weekly_naive"]).abs().mean())
         summary.update({"lstm_mae": lstm_mae, "weekly_naive_mae": naive_mae, "rel_mae": lstm_mae / naive_mae})
+    # Share of counted hours whose real price fell inside the 80% range (forecasts from before
+    # the ranges were added have none, so they are left out)
+    if "lstm_low" in done:
+        ranged = done[done["lstm_low"].notna()]
+        if len(ranged):
+            inside = (ranged["actual"] >= ranged["lstm_low"]) & (ranged["actual"] <= ranged["lstm_high"])
+            summary.update({"range_hours": int(len(ranged)), "range_coverage": float(inside.mean())})
     return summary
 
 
@@ -230,6 +237,13 @@ def read_record():
     record["issued_at_utc"] = pd.to_datetime(record["issued_at_utc"], utc=True)
     return record
 
+# Adds the 80% range around every LSTM forecast, with the calibration chosen on the validation year
+# and checked on the test year (see intervals.py). It is the same calculation as in the evaluation.
+def add_ranges(forecast, rows):
+    cal = json.loads(intervals.CALIBRATION.read_text())
+    scale = intervals.scale_values(rows, cal["scale"])
+    return forecast.assign(lstm_low=forecast["lstm"].to_numpy() + scale * cal["q_low"],
+                           lstm_high=forecast["lstm"].to_numpy() + scale * cal["q_high"])
 
 # Adds one line to the run log. Every line is a small JSON object, so the file is easy to read
 # both by people and by the dashboard, and a new line never changes the earlier ones.
@@ -276,8 +290,9 @@ def run(now):
         "lstm": train_lstm.predict_prices(model, stats, rows, known["price_sek_kwh"].to_numpy()),
         "weekly_naive": np.asarray(baseline_predictions(rows)["weekly_naive"]),
     })
-    log.info("forecast:\n" + forecast[["time_local", "lstm", "weekly_naive"]].round(
-        {"lstm": 3, "weekly_naive": 3}).to_string(index=False))
+    forecast = add_ranges(forecast, rows)
+    log.info("forecast:\n" + forecast[["time_local", "lstm_low", "lstm", "lstm_high", "weekly_naive"]].round(
+        {"lstm_low": 3, "lstm": 3, "lstm_high": 3, "weekly_naive": 3}).to_string(index=False))
 
     old = read_record()
     record = update_record(old, forecast, prices)

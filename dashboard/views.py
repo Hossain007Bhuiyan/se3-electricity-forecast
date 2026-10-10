@@ -96,6 +96,13 @@ def card(label, value, unit="", note=""):
 # Line chart of one day: the two forecasts, and the real prices once they are published
 def day_chart(rows, height=430):
     fig = go.Figure()
+    if has_ranges(rows):
+        # The 80% range as a shaded band behind the lines: an invisible upper line, then the lower
+        # line filled up to it
+        fig.add_trace(go.Scatter(x=rows["time_local"], y=rows["lstm_high"], mode="lines", line=dict(width=0),
+                                 showlegend=False, hoverinfo="skip", name="80% range, upper"))
+        fig.add_trace(go.Scatter(x=rows["time_local"], y=rows["lstm_low"], mode="lines", line=dict(width=0),
+                                 fill="tonexty", fillcolor="rgba(34,211,238,.22)", hoverinfo="skip", name="80% range"))
     fig.add_trace(go.Scatter(x=rows["time_local"], y=rows["lstm"], name="LSTM forecast", mode="lines",
                              line=dict(color=CYAN, width=3, shape="spline"),
                              fill="tozeroy", fillcolor="rgba(34,211,238,.10)"))
@@ -105,10 +112,16 @@ def day_chart(rows, height=430):
         fig.add_trace(go.Scatter(x=rows["time_local"], y=rows["actual"], name="Real price", mode="lines+markers",
                                  line=dict(color=AMBER, width=2.5), marker=dict(size=6)))
     fig.update_traces(hovertemplate="%{y:.3f} SEK/kWh")
+    if has_ranges(rows):
+        fig.update_traces(selector=dict(name="LSTM forecast"), customdata=rows[["lstm_low", "lstm_high"]].to_numpy(),
+                          hovertemplate="%{y:.3f} SEK/kWh (80% range %{customdata[0]:.3f} to %{customdata[1]:.3f})")
     fig.update_yaxes(title="SEK/kWh")
     fig.update_xaxes(tickformat="%H:%M")
     return style(fig, height)
 
+# True when the rows have an 80% range (forecasts from before the ranges were added have none)
+def has_ranges(rows):
+    return "lstm_low" in rows and rows["lstm_low"].notna().any()
 
 # 3D surface of the real prices: days front to back, hours left to right, price as height.
 # The "Rotate" button turns the camera once around the landscape.
@@ -182,6 +195,9 @@ def tomorrow_page():
             "The LSTM forecast and the simple weekly_naive baseline for every hour (Swedish time). "
             "The real prices appear here once they are published, around 13:00 the day before.")
     show_chart(day_chart(rows), "newest")
+    if has_ranges(rows):
+        st.caption("The shaded band is the 80% range: the real price should fall inside it in about 8 of 10 hours. "
+                   "It is based on the LSTM's past errors and was checked on the test year (77% of hours inside).")
 
 
 # Live accuracy: the overall live error, its development over time, the last 30 counted days,
@@ -205,6 +221,12 @@ def live_accuracy_page():
                     + card("Live MAE, baseline", f"{naive_mae:.3f}", "SEK/kWh", "weekly_naive, same days")
                     + card("Test year, LSTM", "0.209", "SEK/kWh", "for comparison; needs several weeks of live data")
                     + '</div>', unsafe_allow_html=True)
+        coverage = live_data.range_coverage(record)
+        if coverage is not None:
+            hours, share = coverage
+            st.markdown('<div class="cards">'
+                        + card("Inside the 80% range", f"{share:.0%}", "", f"of {hours} counted hours (target 80%, test year 77%)")
+                        + '</div>', unsafe_allow_html=True)
 
         week = live_data.rolling_errors(errors, 7)
         if week.empty:
