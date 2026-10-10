@@ -26,7 +26,7 @@ Every day, the electricity prices for the next day are set in an auction that cl
 - **Result:** on a full year of unseen test data (October 2025 to September 2026), the LSTM's average error is **34% lower** than the best simple baseline, and it beat LightGBM in **11 of 12 months**.
 - **Explainability:** SHAP values and permutation importance show what drives each model's forecasts.
 - **Live system:** the forecast runs every morning; every forecast is saved and later compared with the real prices.
-- **Engineering:** experiment tracking with MLflow, 68 automated tests, continuous integration with GitHub Actions, daily monitoring with alerts and a public dashboard.
+- **Engineering:** experiment tracking with MLflow, 70 automated tests, continuous integration with GitHub Actions, daily monitoring with alerts and a public dashboard.
 
 ---
 
@@ -41,8 +41,8 @@ Every day, the electricity prices for the next day are set in an auction that cl
 | Forecast | Price landscape (3D) | the real prices of the last 30 days as a rotatable 3D surface |
 | Model | Test-year results | all six models on the test year |
 | Model | Experiment tracking (MLflow) | every tracked run, with a link to its exact code commit |
-| Model | Monitoring | the latest daily checks: forecast before 12:00, live error and input drift |
-| Project | How it works | the four daily steps |
+| Model | Monitoring | the latest daily checks (forecast before 12:00, live error, input drift) and the run log |
+| Project | How it works | how the model was built and chosen and what runs every day |
 | Project | Data and sources | where the data comes from, the rules behind every number, and the live CI status |
 
 On phones, a **Menu** button and a row of page buttons replace the top menu, and the charts scroll with the page instead of zooming. The dashboard is hosted for free on Streamlit Community Cloud. After 12 hours without visitors it goes to sleep; the button "Yes, get this app back up!" starts it again within about a minute.
@@ -119,7 +119,7 @@ The project has three parts: a **research pipeline** that built and evaluated th
 
  ┌───────────────┐   ┌───────────────┐   ┌───────────────┐   ┌───────────────┐   ┌───────────────┐
  │    Push or    │   │ GitHub Actions│   │   Main tests  │   │ PyTorch tests │   │  Status badge │
- │  pull request │──►│ CI on a clean │──►│    55 tests   │──►│   13 tests,   │──►│  green or red │
+ │  pull request │──►│ CI on a clean │──►│    56 tests   │──►│   14 tests,   │──►│  green or red │
  │               │   │ Linux machine │   │               │   │  own process  │   │               │
  │               │   │    uv sync    │   │               │   │               │   │               │
  │               │   │    --locked   │   │               │   │               │   │               │
@@ -196,7 +196,7 @@ SHAP values show how a model uses its inputs, not proven causes. Inputs that car
 <img width="1297" height="838" alt="MLflow: all tracked runs" src="https://github.com/user-attachments/assets/10ac7720-df67-45e3-b9f1-f0ed8bbfeed8" />
 <img width="1745" height="1078" alt="MLflow: comparison of runs" src="https://github.com/user-attachments/assets/ecdd50b8-917b-4859-8aeb-07b6577d0a1c" />
 
-**Tests.** 68 automated tests (pytest: 55 main tests and 13 PyTorch tests) check that no feature uses future information, the monitoring checks, the time-based split, the clock changes, Swedish holidays, the weather forecasts, MLflow tracking, repeatable model training, the daily forecast program and every page of the dashboard. They use small synthetic data, so no downloaded data is needed.
+**Tests.** 70 automated tests (pytest: 56 main tests and 13 PyTorch tests) check that no feature uses future information, the monitoring checks, the time-based split, the clock changes, Swedish holidays, the weather forecasts, MLflow tracking, repeatable model training, the daily forecast program and every page of the dashboard. They use small synthetic data, so no downloaded data is needed.
 
 **Continuous integration (CI).** On every push to `main` and on every pull request, [GitHub Actions](https://github.com/Hossain007Bhuiyan/se3-electricity-forecast/actions/workflows/tests.yml) runs the whole test suite on a clean Linux machine:
 
@@ -215,6 +215,7 @@ The **tests** badge at the top shows the result of the latest run. A second work
 | **When** | An external timer ([cron-job.org](https://cron-job.org)) starts the forecast at 06:05 and 08:05 Swedish time. GitHub's own schedule runs four more times each morning as a backup, because GitHub can delay or skip scheduled runs. The first forecast made counts; later runs do not change it. |
 | **What** | The workflow downloads the newest prices and a weather forecast, retrains the LSTM at the start of each month, forecasts tomorrow's 24 hours with the LSTM and the `weekly_naive` baseline, and fills in the real prices of earlier forecasts. |
 | **Where** | The [`forecast-data`](https://github.com/Hossain007Bhuiyan/se3-electricity-forecast/tree/forecast-data) branch: `forecasts.csv` (every forecast hour with the real price) and `summary.json` (the live accuracy). |
+| **Run log** | Every daily run adds one line to `run_log.jsonl` in the forecast-data branch: when it started, what it did, whether the model was retrained, how long it took and the error message if it failed. The dashboard shows the last 14 runs. |
 | **Monitoring** | Every day after 12:00, a second workflow checks that tomorrow's forecast was made before 12:00, that the live error of the last 7 counted days stays below a limit and that the model inputs have not drifted away from the test year. Every alert opens a GitHub issue. The limits come from the test year and are fixed in `results/monitoring_reference.json`. |
 
 ---

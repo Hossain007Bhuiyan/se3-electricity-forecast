@@ -60,6 +60,11 @@ def get_mlflow_runs():
 def get_monitoring():
     return live_data.load_monitoring()
 
+
+@st.cache_data(ttl=600)
+def get_run_log():
+    return live_data.load_run_log()
+
 @st.cache_data(ttl=3600)
 def get_recent_prices():
     return live_data.fetch_recent_prices(days=30)
@@ -267,6 +272,29 @@ def monitoring_page():
         st.dataframe(drift, hide_index=True,
                      column_config={"input": "Input", "psi": st.column_config.NumberColumn("PSI", format="%.3f")})
 
+    section("Run log", "The last 14 daily forecast runs",
+            "Every run of the daily forecast adds one line: when it started, what it did and how long it took. "
+            "A failed run is logged with its error message.")
+    try:
+        runs = get_run_log().head(14)
+    except Exception as error:
+        show_problem("The run log could not be loaded from GitHub right now.", error)
+        return
+    table = pd.DataFrame({
+        "started": runs["started"].dt.strftime("%a %d %b, %H:%M"),
+        "status": runs["status"],
+        "forecast_day": runs.get("forecast_day"),
+        "new_hours": runs.get("new_hours"),
+        "retrained": runs.get("retrained"),
+        "duration_s": runs["duration_s"],
+        "error": runs.get("error"),
+    })
+    st.dataframe(table, hide_index=True, column_config={
+        "started": "Started (Swedish time)", "status": "Status", "forecast_day": "Forecast day",
+        "new_hours": "New hours", "retrained": "Retrained", "error": "Error",
+        "duration_s": st.column_config.NumberColumn("Duration (s)", format="%.0f"),
+    })
+
 # The real prices of the last 30 days as a 3D landscape
 def landscape_page():
     section("Price landscape", "The last 30 days in 3D",
@@ -336,17 +364,31 @@ def experiments_page():
         show_problem("The MLflow runs could not be loaded from GitHub right now.", error)
 
 
-# The four steps that run every morning
+# How the project works: how the model was built and chosen, and what runs every day
 def how_it_works_page():
-    section("How it works", "From raw prices to a daily forecast",
-            "The same four steps run every morning, fully automatically.")
+    section("How it works", "Building the model",
+            "Several models were built and compared in exactly the same way. The best one on the validation "
+            "year was chosen, then tested once on a year it had never been tuned on.")
     st.markdown('<div class="cards">'
-                + card("1 &middot; Data", "Since Nov 2022", "", "hourly SE3 prices and Stockholm weather")
+                + card("1 &middot; Data", "Since Nov 2022", "", "hourly SE3 prices, Stockholm weather and Swedish holidays")
                 + card("2 &middot; Inputs", "18", "features", "only what is known the morning before: recent prices, calendar, holidays, weather forecast")
-                + card("3 &middot; Model", "LSTM", "", "reads the last 168 hours of prices; retrained every month")
-                + card("4 &middot; Live", "Daily", "", "runs on GitHub Actions before the 12:00 deadline and is checked against the real prices")
+                + card("3 &middot; Models", "6", "compared", "four simple baselines, LightGBM and an LSTM neural network")
+                + card("4 &middot; Evaluation", "Walk-forward", "", "every month forecast by a model trained only on earlier data; the LSTM was best on the validation and the test year")
+                + '</div>', unsafe_allow_html=True)
+    st.markdown('<div class="cards">'
+                + card("5 &middot; Explainability", "SHAP", "", "SHAP values and permutation importance show which inputs drive each forecast")
+                + card("6 &middot; Tracking", "MLflow", "", "every run is saved with its settings, results, code commit and data fingerprint")
+                + card("7 &middot; Testing", "CI", "", "automated tests run with GitHub Actions on every change to the code")
                 + '</div>', unsafe_allow_html=True)
 
+    section("How it works", "Running it every day",
+            "The chosen model, the LSTM, runs every morning and is checked every day, fully automatically.")
+    st.markdown('<div class="cards">'
+                + card("8 &middot; Daily forecast", "06:05", "", "a timer starts GitHub Actions: new prices and a weather forecast, the LSTM retrained once a month, tomorrow's 24 hours forecast before the 12:00 deadline")
+                + card("9 &middot; Live record", "Every hour", "", "each forecast is saved and later compared with the real price; only forecasts made before 12:00 count")
+                + card("10 &middot; Monitoring", "12:40", "", "daily checks of the deadline, the live error and input drift; every alert opens a GitHub issue")
+                + card("11 &middot; Run log", "Every run", "", "each run records what it did, how long it took and any error")
+                + '</div>', unsafe_allow_html=True)
 
 # Where the data comes from, the rules that keep the results honest, and links
 def about_page():

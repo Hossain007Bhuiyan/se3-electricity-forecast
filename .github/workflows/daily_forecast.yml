@@ -68,7 +68,9 @@ jobs:
       - name: Make the forecast
         run: uv run python -m se3_electricity_forecast.daily
 
+      # Also after a failed run, so the run log keeps the error message
       - name: Save the results in the forecast-data branch
+        if: always()
         run: |
           cd live
           git config user.name "github-actions[bot]"

@@ -148,6 +148,12 @@ def fake_downloads(record, monkeypatch):
         "drift": {"status": "ok", "days": 7, "month": 10, "limit": 0.25, "drifted": [], "message": "All inputs look normal.",
                   "psi": {"price_lag_24h": 0.05, "temperature_2m": 0.12}}}}
     monkeypatch.setattr(live_data, "load_monitoring", lambda: monitoring)
+    run_log = pd.DataFrame({"started_utc": ["2026-10-03T04:05:00+00:00", "2026-10-02T04:05:00+00:00"],
+                            "status": ["forecast saved", "failed"], "forecast_day": ["2026-10-04", None],
+                            "new_hours": [24, None], "retrained": [False, None], "duration_s": [27.5, 3.1],
+                            "error": [None, "ConnectionError: price API not reachable"]})
+    run_log["started"] = pd.to_datetime(run_log["started_utc"], utc=True).dt.tz_convert(TZ)
+    monkeypatch.setattr(live_data, "load_run_log", lambda: run_log)
     st.cache_data.clear()  # no cached data from an earlier test
 
 
@@ -167,7 +173,7 @@ def test_dashboard_frame_and_first_page_run(fake_downloads):
     ("landscape_page", 1, 0),
     ("test_results_page", 1, 0),
     ("experiments_page", 1, 1),       # the monthly MAE chart and the table of MLflow runs
-    ("monitoring_page", 0, 1),        # the table of input drift values
+    ("monitoring_page", 0, 2),        # the tables of input drift values and of the run log
     ("how_it_works_page", 0, 0),
     ("about_page", 0, 0),
 ])
@@ -213,3 +219,16 @@ def test_rolling_errors_weight_days_by_hours():
     assert len(week) == 2 and np.isclose(week["lstm_mae"].iloc[0], 0.1)
     assert np.isclose(week["lstm_mae"].iloc[1], (0.1 * 24 * 6 + 0.9 * 25) / (24 * 6 + 25))
     assert live_data.rolling_errors(errors, 28).empty
+
+def test_run_log_is_read_newest_first(monkeypatch):
+    class FakeResponse:
+        text = ('{"started_utc": "2026-10-02T04:05:00+00:00", "status": "forecast saved", "duration_s": 30}\n'
+                '{"started_utc": "2026-10-03T04:05:00+00:00", "status": "failed", "error": "x", "duration_s": 2}\n')
+
+        def raise_for_status(self):
+            pass
+
+    monkeypatch.setattr(live_data.requests, "get", lambda url, timeout: FakeResponse())
+    runs = live_data.load_run_log("https://example.com/run_log.jsonl")
+    assert runs["status"].tolist() == ["failed", "forecast saved"]
+    assert str(runs["started"].dt.tz) == TZ

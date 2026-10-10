@@ -1,6 +1,7 @@
 # Tests for daily.py, the daily live forecast. No internet is used: the downloads are replaced
 # by synthetic data, and all files are written to a temporary folder.
 
+import json
 from datetime import date
 
 import numpy as np
@@ -40,6 +41,7 @@ def folders(tmp_path, monkeypatch):
     monkeypatch.setattr(daily, "RECORD", tmp_path / "live" / "forecasts.csv")
     monkeypatch.setattr(daily, "SUMMARY", tmp_path / "live" / "summary.json")
     monkeypatch.setattr(daily, "INPUTS", tmp_path / "live" / "inputs.csv")
+    monkeypatch.setattr(daily, "RUN_LOG", tmp_path / "live" / "run_log.jsonl")
     return tmp_path
 
 
@@ -165,3 +167,20 @@ def test_full_daily_run_without_internet(folders, monkeypatch):
     daily.read_record().to_csv(daily.RECORD, index=False)  # saving again must not change a single digit
     assert daily.RECORD.read_text() == first
     assert daily.read_inputs()["issued_at_utc"].eq(pd.Timestamp("2025-10-20 05:30", tz="UTC")).all()  # first inputs kept
+
+    # Both runs are in the run log: the first made the forecast and trained the model, the second changed nothing
+    runs = [json.loads(line) for line in daily.RUN_LOG.read_text().splitlines()]
+    assert [r["status"] for r in runs] == ["forecast saved", "already forecast"]
+    assert [r["new_hours"] for r in runs] == [24, 0] and [r["retrained"] for r in runs] == [True, False]
+    assert runs[0]["forecast_day"] == "2025-10-21" and runs[0]["duration_s"] >= 0
+
+
+def test_failed_run_is_logged_and_still_fails(folders, monkeypatch):
+    def no_prices(day):
+        raise ConnectionError("price API not reachable")
+    monkeypatch.setattr(daily, "update_prices", no_prices)
+    with pytest.raises(ConnectionError):
+        daily.main(now=pd.Timestamp("2025-10-20 05:30", tz="UTC"))
+    run = json.loads(daily.RUN_LOG.read_text())
+    assert run["status"] == "failed" and run["error"] == "ConnectionError: price API not reachable"
+    assert not daily.RECORD.exists()  # nothing else is written

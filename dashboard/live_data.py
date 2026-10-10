@@ -3,8 +3,8 @@
 # this file, so every calculation can be tested on its own.
 
 import io
+import json
 from datetime import timedelta
-
 import pandas as pd
 import requests
 
@@ -16,6 +16,7 @@ TEST_RESULTS_URL = f"{RAW}/main/results/test_results.csv"
 MLFLOW_RUNS_URL = f"{RAW}/main/results/mlflow_runs.csv"           # exported from mlflow.db
 MLFLOW_MONTHLY_URL = f"{RAW}/main/results/mlflow_monthly_mae.csv"
 MONITORING_URL = f"{RAW}/forecast-data/monitoring.json"  # written every day by the monitoring workflow
+RUN_LOG_URL = f"{RAW}/forecast-data/run_log.jsonl"        # one line per daily forecast run
 REPO_URL = f"https://github.com/{REPO}"
 PRICE_API = "https://www.elprisetjustnu.se/api/v1/prices/{year}/{month:02d}-{day:02d}_SE3.json"
 
@@ -109,6 +110,13 @@ def load_monitoring(url=MONITORING_URL):
     response.raise_for_status()
     return response.json()
     
+# The run log of the daily forecast, newest run first. Each line of the file is one JSON object.
+def load_run_log(url=RUN_LOG_URL):
+    response = requests.get(url, timeout=30)
+    response.raise_for_status()
+    runs = pd.DataFrame([json.loads(line) for line in response.text.splitlines() if line.strip()])
+    runs["started"] = pd.to_datetime(runs["started_utc"], utc=True).dt.tz_convert(TZ)
+    return runs.sort_values("started", ascending=False).reset_index(drop=True)
 
 # Real hourly prices for the last `days` days, straight from the same price API the project uses.
 # Since October 2025 the API gives 15-minute prices, so they are averaged per hour, as in the

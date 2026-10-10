@@ -13,9 +13,10 @@
 # Only PyTorch is loaded here, never LightGBM (see final_test.py for why).
 
 import json
+import logging
+import time
 from datetime import date, timedelta
 from pathlib import Path
-
 import numpy as np
 import pandas as pd
 import requests
@@ -36,6 +37,9 @@ MODEL = LIVE / "model" / "lstm.pt"
 RECORD = LIVE / "forecasts.csv"
 SUMMARY = LIVE / "summary.json"
 INPUTS = LIVE / "inputs.csv"                        # the model inputs of every forecast hour
+RUN_LOG = LIVE / "run_log.jsonl"                    # one line per run: what happened and how long it took
+
+log = logging.getLogger(__name__)
 
 FORECAST_URL = "https://api.open-meteo.com/v1/forecast"
 WEATHER_COLS = data_download.WEATHER_VARIABLES
@@ -129,8 +133,8 @@ def train_model(prices, weather, month_start):
     train = df[df["time_local"] < holdout_start]
     holdout = df[(df["time_local"] >= holdout_start) & (df["time_local"] < month_start)]
     model, stats, epochs = train_lstm.fit(train, holdout, prices["price_sek_kwh"].to_numpy())
-    print(f"trained the LSTM for {month_start:%Y-%m}: {epochs} epochs, "
-          f"data until {holdout['time_local'].max()}")
+    log.info(f"trained the LSTM for {month_start:%Y-%m}: {epochs} epochs, "
+             f"data until {holdout['time_local'].max()}")
     return model, stats, epochs
 
 
@@ -227,27 +231,35 @@ def read_record():
     return record
 
 
-# `now` can be given for testing; normally the current time is used
-def main(now=None):
-    now = pd.Timestamp.now(tz="UTC") if now is None else now
+# Adds one line to the run log. Every line is a small JSON object, so the file is easy to read
+# both by people and by the dashboard, and a new line never changes the earlier ones.
+def append_run_log(entry):
+    LIVE.mkdir(parents=True, exist_ok=True)
+    with open(RUN_LOG, "a") as f:
+        f.write(json.dumps(entry) + "\n")
+
+
+# One daily run. Returns what happened, for the run log.
+def run(now):
     today = now.tz_convert(TZ).date()
     day = today + timedelta(days=1)  # the day to forecast
-    print(f"forecasting {day} (Swedish time), run started {now:%Y-%m-%d %H:%M} UTC")
+    log.info(f"forecasting {day} (Swedish time), run started {now:%Y-%m-%d %H:%M} UTC")
 
     prices = update_prices(day)
-    print(f"price history: {len(prices)} hours, last hour {prices['time_local'].max()}")
+    log.info(f"price history: {len(prices)} hours, last hour {prices['time_local'].max()}")
 
     # Retrain at the start of every month, like in the walk-forward evaluation
     month_start = pd.Timestamp(date(day.year, day.month, 1), tz=TZ)
     month = f"{month_start:%Y-%m}"
     saved = load_model()
-    if saved is None or saved[2] != month:
+    retrained = saved is None or saved[2] != month
+    if retrained:
         weather_history = data_download.download_weather(data_download.START_DATE, today - timedelta(days=1))
         model, stats, epochs = train_model(prices, weather_history, month_start)
         save_model(model, stats, month, epochs)
     else:
         model, stats, _ = saved
-        print(f"using the saved LSTM for {month}")
+        log.info(f"using the saved LSTM for {month}")
 
     # Inputs for tomorrow: published prices only, plus the newest weather forecast
     known = prices[prices["time_local"] < pd.Timestamp(day, tz=TZ)].reset_index(drop=True)
@@ -264,18 +276,41 @@ def main(now=None):
         "lstm": train_lstm.predict_prices(model, stats, rows, known["price_sek_kwh"].to_numpy()),
         "weekly_naive": np.asarray(baseline_predictions(rows)["weekly_naive"]),
     })
-    print()
-    print(forecast[["time_local", "lstm", "weekly_naive"]].round({"lstm": 3, "weekly_naive": 3}).to_string(index=False))
+    log.info("forecast:\n" + forecast[["time_local", "lstm", "weekly_naive"]].round(
+        {"lstm": 3, "weekly_naive": 3}).to_string(index=False))
 
-    record = update_record(read_record(), forecast, prices)
+    old = read_record()
+    record = update_record(old, forecast, prices)
     LIVE.mkdir(parents=True, exist_ok=True)
     record.to_csv(RECORD, index=False)
     update_inputs(read_inputs(), inputs).to_csv(INPUTS, index=False)
     summary = summarize(record)
     SUMMARY.write_text(json.dumps(summary, indent=2) + "\n")
-    print()
-    print("live accuracy so far:", summary)
+    new_hours = len(record) - (0 if old is None else len(old))
+    log.info(f"{new_hours} new forecast hours saved; live accuracy so far: {summary}")
+    return {"forecast_day": str(day), "status": "forecast saved" if new_hours else "already forecast",
+            "new_hours": new_hours, "retrained": retrained, "model_month": month, "counted_days": summary["days"]}
 
+
+# `now` can be given for testing; normally the current time is used. Every run, also a failed one,
+# adds a line to the run log. A failed run still stops with its error, so GitHub marks it as failed.
+def main(now=None):
+    now = pd.Timestamp.now(tz="UTC") if now is None else now
+    started = time.monotonic()
+    entry = {"started_utc": now.isoformat(), "status": "failed"}
+    try:
+        entry.update(run(now))
+    except Exception as error:
+        entry["error"] = f"{type(error).__name__}: {error}"
+        log.exception("the daily run failed")
+        raise
+    finally:
+        entry["duration_s"] = round(time.monotonic() - started, 1)
+        append_run_log(entry)
 
 if __name__ == "__main__":
+    # Times in the log are in UTC, the same as on GitHub
+    logging.Formatter.converter = time.gmtime
+    logging.basicConfig(level=logging.INFO, format="%(asctime)s UTC %(levelname)s %(message)s",
+                        datefmt="%Y-%m-%d %H:%M:%S")
     main()

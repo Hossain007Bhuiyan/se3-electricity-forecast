@@ -12,7 +12,9 @@
 # Only pandas and NumPy are used here, no model library.
 
 import json
+import logging
 import sys
+import time
 from datetime import timedelta
 from pathlib import Path
 import numpy as np
@@ -28,6 +30,8 @@ STATUS = LIVE / "monitoring.json"
 REFERENCE = ROOT / "results" / "monitoring_reference.json"
 FORECAST_FEATURES = ROOT / "data" / "processed" / "features_forecast_weather.parquet"
 LSTM_PREDICTIONS = ROOT / "data" / "processed" / "test_predictions_lstm.parquet"
+
+log = logging.getLogger(__name__)
 
 ERROR_DAYS = 7          # the error check uses the last 7 counted days
 ERROR_QUANTILE = 0.95   # alert when the error is worse than 95% of all 7-day periods in the test year
@@ -174,15 +178,19 @@ def main():
     if sys.argv[1:] == ["reference"]:
         reference = make_reference(pd.read_parquet(FORECAST_FEATURES), pd.read_parquet(LSTM_PREDICTIONS))
         REFERENCE.write_text(json.dumps(reference, indent=1) + "\n")
-        print(f"saved {REFERENCE.relative_to(ROOT)}: 7-day error limit {reference['error_limit']:.4f} "
-              f"(median {reference['error_median']:.4f}), {len(reference['months'])} months of input bins")
+        log.info(f"saved {REFERENCE.relative_to(ROOT)}: 7-day error limit {reference['error_limit']:.4f} "
+                 f"(median {reference['error_median']:.4f}), {len(reference['months'])} months of input bins")
         return
     status = run_checks(read_live_csv(RECORD), read_live_csv(INPUTS), json.loads(REFERENCE.read_text()),
                         pd.Timestamp.now(tz="UTC"))
     STATUS.write_text(json.dumps(status, indent=2) + "\n")
     for name, check in status["checks"].items():
-        print(f"{name:8s} {check['status']:7s} {check['message']}")
+        log.info(f"{name:8s} {check['status']:7s} {check['message']}")
 
 
 if __name__ == "__main__":
+    # Times in the log are in UTC, the same as on GitHub
+    logging.Formatter.converter = time.gmtime
+    logging.basicConfig(level=logging.INFO, format="%(asctime)s UTC %(levelname)s %(message)s",
+                        datefmt="%Y-%m-%d %H:%M:%S")
     main()
