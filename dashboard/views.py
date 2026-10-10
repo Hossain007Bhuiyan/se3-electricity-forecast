@@ -56,6 +56,9 @@ def get_test_results():
 def get_mlflow_runs():
     return live_data.load_mlflow_runs(), live_data.load_mlflow_monthly()
 
+@st.cache_data(ttl=600)
+def get_monitoring():
+    return live_data.load_monitoring()
 
 @st.cache_data(ttl=3600)
 def get_recent_prices():
@@ -176,22 +179,53 @@ def tomorrow_page():
     show_chart(day_chart(rows), "newest")
 
 
-# Live accuracy: the error of every counted day, and any earlier day in detail
+# Live accuracy: the overall live error, its development over time, the last 30 counted days,
+# and any earlier day in detail. Only the last 30 days are shown as bars, so the page stays
+# readable when the record grows; the lines show the trend without the noise of single days.
 def live_accuracy_page():
     record, _ = load_record()
     errors = live_data.daily_errors(record)
-    section("Live accuracy", "Forecast vs. reality, day by day",
+    section("Live accuracy", "Forecast vs. reality",
             "Only forecasts made before 12:00 Swedish time on the day before count, so every number here "
             "was forecast before the prices were known. Lower is better.")
     if errors.empty:
         st.info("No counted days yet. Each morning's forecast is checked once the real prices are published, "
                 "so the first counted day appears after the second scheduled morning run.")
     else:
+        lstm_mae = (errors["lstm_mae"] * errors["hours"]).sum() / errors["hours"].sum()
+        naive_mae = (errors["weekly_naive_mae"] * errors["hours"]).sum() / errors["hours"].sum()
+        st.markdown('<div class="cards">'
+                    + card("Counted days", f"{len(errors)}", "", f"{int(errors['hours'].sum())} hours")
+                    + card("Live MAE, LSTM", f"{lstm_mae:.3f}", "SEK/kWh", "all counted days")
+                    + card("Live MAE, baseline", f"{naive_mae:.3f}", "SEK/kWh", "weekly_naive, same days")
+                    + card("Test year, LSTM", "0.209", "SEK/kWh", "for comparison; needs several weeks of live data")
+                    + '</div>', unsafe_allow_html=True)
+
+        week = live_data.rolling_errors(errors, 7)
+        if week.empty:
+            st.caption(f"The 7-day trend appears after 7 counted days ({len(errors)} so far).")
+        else:
+            month = live_data.rolling_errors(errors, 28)
+            trend = go.Figure()
+            trend.add_trace(go.Scatter(x=week["day"], y=week["lstm_mae"], name="LSTM, 7 days", mode="lines",
+                                       line=dict(color=CYAN, width=3)))
+            trend.add_trace(go.Scatter(x=week["day"], y=week["weekly_naive_mae"], name="Baseline, 7 days",
+                                       mode="lines", line=dict(color=VIOLET, width=2, dash="dot")))
+            if not month.empty:
+                trend.add_trace(go.Scatter(x=month["day"], y=month["lstm_mae"], name="LSTM, 28 days", mode="lines",
+                                           line=dict(color=AMBER, width=2)))
+            trend.update_traces(hovertemplate="%{y:.3f} SEK/kWh")
+            trend.update_yaxes(title="MAE (SEK/kWh)")
+            section("Trend", "Average error over the last 7 and 28 counted days", "")
+            show_chart(style(trend, 360), "live_trend")
+
+        last = errors.tail(30)
         bars = go.Figure()
-        labels = [d.strftime("%d %b") for d in errors["day"]]
-        bars.add_trace(go.Bar(x=labels, y=errors["lstm_mae"], name="LSTM", marker_color=CYAN))
-        bars.add_trace(go.Bar(x=labels, y=errors["weekly_naive_mae"], name="Baseline (weekly_naive)", marker_color=VIOLET))
+        labels = [d.strftime("%d %b") for d in last["day"]]
+        bars.add_trace(go.Bar(x=labels, y=last["lstm_mae"], name="LSTM", marker_color=CYAN))
+        bars.add_trace(go.Bar(x=labels, y=last["weekly_naive_mae"], name="Baseline (weekly_naive)", marker_color=VIOLET))
         bars.update_yaxes(title="MAE (SEK/kWh)")
+        section("Day by day", "The last 30 counted days", "")
         show_chart(style(bars, 380), "live_errors")
 
     # Any earlier day with real prices can be looked at in detail
@@ -204,6 +238,34 @@ def live_accuracy_page():
                    else "This forecast was made after 12:00 Swedish time, so it is shown but does not count.")
         show_chart(day_chart(chosen_rows, 380), "chosen_day")
 
+
+# The latest monitoring run: deadline, live error and input drift
+def monitoring_page():
+    section("Monitoring", "Automatic daily checks",
+            "Every day after 12:00 Swedish time, three checks run on the live forecasts. Every alert opens an "
+            "issue on GitHub. The limits come from the test year and were fixed before the checks started.")
+    try:
+        status = get_monitoring()
+    except Exception as error:
+        show_problem("The monitoring result could not be loaded from GitHub right now.", error)
+        return
+    labels = {"ok": "OK", "alert": "Alert", "waiting": "Waiting"}
+    names = {"deadline": "Forecast before 12:00", "error": "Live error", "drift": "Input drift"}
+    checks = status["checks"]
+    st.markdown('<div class="cards">'
+                + "".join(card(names[name], labels[check["status"]], "", check["message"]) for name, check in checks.items())
+                + '</div>', unsafe_allow_html=True)
+    checked = pd.Timestamp(status["checked_at_utc"]).tz_convert(live_data.TZ)
+    st.caption(f"Last check: {checked:%a %d %b %Y, %H:%M} Swedish time.")
+
+    if "psi" in checks["drift"]:
+        drift = pd.DataFrame({"input": list(checks["drift"]["psi"]), "psi": list(checks["drift"]["psi"].values())})
+        drift = drift.sort_values("psi", ascending=False)
+        section("Input drift", "Population stability index per input",
+                f"The inputs of the last {checks['drift']['days']} forecast days compared with the same month in the "
+                f"test year. Above {checks['drift']['limit']} counts as drift.")
+        st.dataframe(drift, hide_index=True,
+                     column_config={"input": "Input", "psi": st.column_config.NumberColumn("PSI", format="%.3f")})
 
 # The real prices of the last 30 days as a 3D landscape
 def landscape_page():

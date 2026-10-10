@@ -1,0 +1,75 @@
+# Every day after 12:00 Swedish time: run the monitoring checks on the live forecasts, save the
+# result in the forecast-data branch and open a GitHub issue for every alert. GitHub sends new
+# issues to the repository owner by email.
+name: monitoring
+
+on:
+  schedule:
+    # 10:37 UTC = 12:37 Swedish summer time (11:37 in winter); 13:37 UTC is a backup run,
+    # because GitHub can delay or skip scheduled runs
+    - cron: "37 10 * * *"
+    - cron: "37 13 * * *"
+  workflow_dispatch:  # adds a "Run workflow" button in the Actions tab
+
+permissions:
+  contents: write  # to save monitoring.json in the forecast-data branch
+  issues: write    # to open an issue for every alert
+
+# The same group as the daily forecast, so the two never write to the forecast-data branch at once
+concurrency:
+  group: daily-forecast
+  cancel-in-progress: false
+
+jobs:
+  monitor:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    steps:
+      - name: Check out the code
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
+
+      - name: Open the forecast-data branch in the live folder
+        run: |
+          git fetch --depth=1 origin forecast-data:forecast-data
+          git worktree add live forecast-data
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9  # v9.0.0
+        with:
+          enable-cache: true
+
+      - name: Install the exact package versions from uv.lock
+        run: uv sync --locked
+
+      - name: Run the checks
+        run: uv run python -m se3_electricity_forecast.monitor
+
+      - name: Save the result in the forecast-data branch
+        run: |
+          cd live
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add monitoring.json
+          if git diff --cached --quiet; then
+            echo "nothing new to save"
+          else
+            git commit -m "Monitoring run $(date -u '+%Y-%m-%d %H:%M') UTC"
+            git push origin forecast-data
+          fi
+
+      # One issue per problem: if an open issue with the same title exists, no new one is opened
+      - name: Open an issue for every alert
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          jq -c '.alerts[]' live/monitoring.json | while read -r alert; do
+            title=$(echo "$alert" | jq -r '.title')
+            body=$(echo "$alert" | jq -r '.body')
+            open=$(gh issue list --state open --search "in:title \"$title\"" --json number --jq 'length')
+            if [ "$open" = "0" ]; then
+              gh issue create --title "$title" --body "$body"
+            else
+              echo "already open: $title"
+            fi
+          done

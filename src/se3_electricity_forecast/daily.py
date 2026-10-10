@@ -197,7 +197,7 @@ def update_inputs(saved, new):
 def read_inputs():
     if not INPUTS.exists():
         return None
-    inputs = pd.read_csv(INPUTS)
+    inputs = pd.read_csv(INPUTS, float_precision="round_trip")
     inputs["time_utc"] = pd.to_datetime(inputs["time_utc"], utc=True)
     inputs["time_local"] = inputs["time_utc"].dt.tz_convert(TZ)
     inputs["issued_at_utc"] = pd.to_datetime(inputs["issued_at_utc"], utc=True)
@@ -220,7 +220,7 @@ def summarize(record):
 def read_record():
     if not RECORD.exists():
         return None
-    record = pd.read_csv(RECORD)
+    record = pd.read_csv(RECORD, float_precision="round_trip")  # reads every number back exactly
     record["time_utc"] = pd.to_datetime(record["time_utc"], utc=True)
     record["time_local"] = record["time_utc"].dt.tz_convert(TZ)
     record["issued_at_utc"] = pd.to_datetime(record["issued_at_utc"], utc=True)

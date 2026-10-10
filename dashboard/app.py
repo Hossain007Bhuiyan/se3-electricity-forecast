@@ -120,6 +120,7 @@ menu = {
     "Model": [
         st.Page(views.test_results_page, title="Test-year results", url_path="test-results"),
         st.Page(views.experiments_page, title="Experiment tracking (MLflow)", url_path="experiments"),
+        st.Page(views.monitoring_page, title="Monitoring", url_path="monitoring"),
     ],
     "Project": [
         st.Page(views.how_it_works_page, title="How it works", url_path="how-it-works"),

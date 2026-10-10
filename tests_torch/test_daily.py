@@ -161,4 +161,7 @@ def test_full_daily_run_without_internet(folders, monkeypatch):
     # Running again for the same day must not add or change anything
     daily.main(now=pd.Timestamp("2025-10-20 06:30", tz="UTC"))
     assert daily.read_record()["lstm"].equals(record["lstm"])
+    first = daily.RECORD.read_text()
+    daily.read_record().to_csv(daily.RECORD, index=False)  # saving again must not change a single digit
+    assert daily.RECORD.read_text() == first
     assert daily.read_inputs()["issued_at_utc"].eq(pd.Timestamp("2025-10-20 05:30", tz="UTC")).all()  # first inputs kept

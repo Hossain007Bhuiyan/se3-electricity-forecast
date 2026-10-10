@@ -142,6 +142,12 @@ def fake_downloads(record, monkeypatch):
     monkeypatch.setattr(live_data, "fetch_recent_prices", lambda days: recent)
     monkeypatch.setattr(live_data, "load_mlflow_runs", lambda: mlflow_runs)
     monkeypatch.setattr(live_data, "load_mlflow_monthly", lambda: mlflow_monthly)
+    monitoring = {"checked_at_utc": "2026-10-03T10:37:00+00:00", "alerts": [], "checks": {
+        "deadline": {"status": "ok", "day": "2026-10-04", "message": "The forecast for 2026-10-04 was made at 06:05, before 12:00."},
+        "error": {"status": "waiting", "days": 1, "message": "1 of 7 counted days so far."},
+        "drift": {"status": "ok", "days": 7, "month": 10, "limit": 0.25, "drifted": [], "message": "All inputs look normal.",
+                  "psi": {"price_lag_24h": 0.05, "temperature_2m": 0.12}}}}
+    monkeypatch.setattr(live_data, "load_monitoring", lambda: monitoring)
     st.cache_data.clear()  # no cached data from an earlier test
 
 
@@ -161,6 +167,7 @@ def test_dashboard_frame_and_first_page_run(fake_downloads):
     ("landscape_page", 1, 0),
     ("test_results_page", 1, 0),
     ("experiments_page", 1, 1),       # the monthly MAE chart and the table of MLflow runs
+    ("monitoring_page", 0, 1),        # the table of input drift values
     ("how_it_works_page", 0, 0),
     ("about_page", 0, 0),
 ])
@@ -196,5 +203,13 @@ def test_phone_menu_lists_every_page(fake_downloads):
     page = AppTest.from_file(str(DASHBOARD / "app.py"), default_timeout=60)
     page.run()
     menu = next(m.value for m in page.markdown if 'class="mobile-menu"' in m.value)
-    assert menu.count("<a ") == 7
+    assert menu.count("<a ") == 8
     assert 'href="/" target="_self" class="active">Tomorrow\'s forecast</a>' in menu  # the start page is marked
+
+def test_rolling_errors_weight_days_by_hours():
+    errors = pd.DataFrame({"day": pd.date_range("2026-10-01", periods=8).date, "hours": [24] * 7 + [25],
+                           "lstm_mae": [0.1] * 7 + [0.9], "weekly_naive_mae": [0.3] * 8})
+    week = live_data.rolling_errors(errors, 7)
+    assert len(week) == 2 and np.isclose(week["lstm_mae"].iloc[0], 0.1)
+    assert np.isclose(week["lstm_mae"].iloc[1], (0.1 * 24 * 6 + 0.9 * 25) / (24 * 6 + 25))
+    assert live_data.rolling_errors(errors, 28).empty
