@@ -376,7 +376,7 @@ def how_it_works_page():
                 + card("4 &middot; Evaluation", "Walk-forward", "", "every month forecast by a model trained only on earlier data; the LSTM was best on the validation and the test year")
                 + '</div>', unsafe_allow_html=True)
     st.markdown('<div class="cards">'
-                + card("5 &middot; Explainability", "SHAP", "", "SHAP values and permutation importance show which inputs drive each forecast")
+                + card("5 &middot; Explainability", "3 methods", "", "TreeSHAP for LightGBM, expected gradients (Captum) for the LSTM, and permutation importance for both")
                 + card("6 &middot; Tracking", "MLflow", "", "every run is saved with its settings, results, code commit and data fingerprint")
                 + card("7 &middot; Testing", "CI", "", "automated tests run with GitHub Actions on every change to the code")
                 + '</div>', unsafe_allow_html=True)
