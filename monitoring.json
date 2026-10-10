@@ -1,0 +1,21 @@
+{
+  "checked_at_utc": "2026-10-10T00:47:34.566437+00:00",
+  "checks": {
+    "deadline": {
+      "status": "waiting",
+      "day": "2026-10-11",
+      "message": "The forecast for 2026-10-11 has not been made yet. It is still before 12:00."
+    },
+    "error": {
+      "status": "waiting",
+      "days": 6,
+      "message": "6 of 7 counted days so far. The check starts after 7 days."
+    },
+    "drift": {
+      "status": "waiting",
+      "days": 3,
+      "message": "3 of 7 days of inputs so far. The check starts after 7 days."
+    }
+  },
+  "alerts": []
+}
