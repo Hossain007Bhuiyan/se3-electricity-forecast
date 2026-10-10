@@ -117,7 +117,7 @@ menu = {
         st.Page(views.live_accuracy_page, title="Live accuracy", url_path="live-accuracy"),
         st.Page(views.landscape_page, title="Price landscape (3D)", url_path="price-landscape"),
     ],
-    "Model": [
+    "Performance": [
         st.Page(views.test_results_page, title="Test-year results", url_path="test-results"),
         st.Page(views.experiments_page, title="Experiment tracking (MLflow)", url_path="experiments"),
         st.Page(views.monitoring_page, title="Monitoring", url_path="monitoring"),
