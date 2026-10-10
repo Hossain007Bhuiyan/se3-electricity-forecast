@@ -63,7 +63,7 @@ html, body, .stApp, .stMarkdown { font-family: 'Inter', sans-serif; }
 [data-testid="stExpandSidebarButton"] > * { display: none !important; }
 [data-testid="stExpandSidebarButton"]::after { content: "☰  Menu"; color: #f8fafc; font-weight: 600; font-size: .9rem; white-space: nowrap; }
 @media (max-width: 900px) {
-  .mobile-menu { display: flex; gap: 8px; overflow-x: auto; margin-top: 14px; padding-bottom: 6px; -webkit-overflow-scrolling: touch; }
+  .mobile-menu { display: none !important; }
   .mobile-menu a { flex: 0 0 auto; padding: 8px 14px; border-radius: 999px; font-size: .85rem; text-decoration: none;
     color: #e2e8f0; background: rgba(255,255,255,.06); border: 1px solid rgba(255,255,255,.14); }
   .mobile-menu a.active { background: rgba(34,211,238,.18); border-color: #22d3ee; color: #f8fafc; font-weight: 600; }
