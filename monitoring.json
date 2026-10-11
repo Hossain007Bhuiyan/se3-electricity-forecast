@@ -1,5 +1,5 @@
 {
-  "checked_at_utc": "2026-10-11T16:25:15.460834+00:00",
+  "checked_at_utc": "2026-10-11T18:25:04.815466+00:00",
   "checks": {
     "deadline": {
       "status": "ok",
@@ -23,7 +23,7 @@
   "alerts": [
     {
       "title": "Monitoring alert: live error above limit",
-      "body": "LSTM MAE of the last 7 counted days: 0.351 SEK/kWh, above the limit of 0.319 (baseline: 0.650).\n\nChecked at 2026-10-11 16:25 UTC."
+      "body": "LSTM MAE of the last 7 counted days: 0.351 SEK/kWh, above the limit of 0.319 (baseline: 0.650).\n\nChecked at 2026-10-11 18:25 UTC."
     }
   ]
 }
