@@ -1,10 +1,10 @@
 {
-  "checked_at_utc": "2026-10-10T17:58:24.547717+00:00",
+  "checked_at_utc": "2026-10-11T10:40:50.607815+00:00",
   "checks": {
     "deadline": {
       "status": "ok",
-      "day": "2026-10-11",
-      "message": "The forecast for 2026-10-11 was made at 02:54, before 12:00."
+      "day": "2026-10-12",
+      "message": "The forecast for 2026-10-12 was made at 06:05, before 12:00."
     },
     "error": {
       "status": "ok",
@@ -16,8 +16,8 @@
     },
     "drift": {
       "status": "waiting",
-      "days": 4,
-      "message": "4 of 7 days of inputs so far. The check starts after 7 days."
+      "days": 5,
+      "message": "5 of 7 days of inputs so far. The check starts after 7 days."
     }
   },
   "alerts": []
