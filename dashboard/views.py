@@ -119,6 +119,25 @@ def day_chart(rows, height=430):
     fig.update_xaxes(tickformat="%H:%M")
     return style(fig, height)
 
+# The rolling 7-day (and, once there are enough days, 28-day) error as lines with a point per day.
+# The days are used as text labels, like in the bar chart, so the axis shows one label per day
+# instead of hours (with only a few days, a date axis zooms in and shows times of day).
+def trend_chart(week, month):
+    def labels(df):
+        return [d.strftime("%d %b") for d in df["day"]]
+    fig = go.Figure()
+    fig.add_trace(go.Scatter(x=labels(week), y=week["lstm_mae"], name="LSTM, 7 days", mode="lines+markers",
+                             line=dict(color=CYAN, width=3)))
+    fig.add_trace(go.Scatter(x=labels(week), y=week["weekly_naive_mae"], name="Baseline, 7 days",
+                             mode="lines+markers", line=dict(color=VIOLET, width=2, dash="dot")))
+    if not month.empty:
+        fig.add_trace(go.Scatter(x=labels(month), y=month["lstm_mae"], name="LSTM, 28 days", mode="lines+markers",
+                                 line=dict(color=AMBER, width=2)))
+    fig.update_traces(hovertemplate="%{y:.3f} SEK/kWh")
+    fig.update_xaxes(type="category")
+    fig.update_yaxes(title="MAE (SEK/kWh)")
+    return style(fig, 360)
+    
 # True when the rows have an 80% range (forecasts from before the ranges were added have none)
 def has_ranges(rows):
     return "lstm_low" in rows and rows["lstm_low"].notna().any()
@@ -232,19 +251,9 @@ def live_accuracy_page():
         if week.empty:
             st.caption(f"The 7-day trend appears after 7 counted days ({len(errors)} so far).")
         else:
-            month = live_data.rolling_errors(errors, 28)
-            trend = go.Figure()
-            trend.add_trace(go.Scatter(x=week["day"], y=week["lstm_mae"], name="LSTM, 7 days", mode="lines",
-                                       line=dict(color=CYAN, width=3)))
-            trend.add_trace(go.Scatter(x=week["day"], y=week["weekly_naive_mae"], name="Baseline, 7 days",
-                                       mode="lines", line=dict(color=VIOLET, width=2, dash="dot")))
-            if not month.empty:
-                trend.add_trace(go.Scatter(x=month["day"], y=month["lstm_mae"], name="LSTM, 28 days", mode="lines",
-                                           line=dict(color=AMBER, width=2)))
-            trend.update_traces(hovertemplate="%{y:.3f} SEK/kWh")
-            trend.update_yaxes(title="MAE (SEK/kWh)")
-            section("Trend", "Average error over the last 7 and 28 counted days", "")
-            show_chart(style(trend, 360), "live_trend")
+            section("Trend", "Average error over the last 7 and 28 counted days",
+                    "Each point is the average error of the 7 (or 28) counted days up to and including that day.")
+            show_chart(trend_chart(week, live_data.rolling_errors(errors, 28)), "live_trend")
 
         last = errors.tail(30)
         bars = go.Figure()

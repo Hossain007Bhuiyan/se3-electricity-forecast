@@ -12,6 +12,7 @@
 [![MLflow](https://img.shields.io/badge/MLflow-tracking-0194E2?style=for-the-badge&logo=mlflow&logoColor=white)](https://mlflow.org/)
 [![Streamlit](https://img.shields.io/badge/Streamlit-dashboard-FF4B4B?style=for-the-badge&logo=streamlit&logoColor=white)](https://streamlit.io/)
 [![uv](https://img.shields.io/badge/uv-locked%20packages-DE5FE9?style=for-the-badge&logo=uv&logoColor=white)](https://docs.astral.sh/uv/)
+[![cron-job.org](https://img.shields.io/badge/cron--job.org-daily%20timer-2D9CDB?style=for-the-badge)](https://cron-job.org/en/)
 
 **[🌐 Open the live dashboard](https://se3-electricity-forecast.streamlit.app/)** · **[📈 See the live forecast record](https://github.com/Hossain007Bhuiyan/se3-electricity-forecast/tree/forecast-data)**
 

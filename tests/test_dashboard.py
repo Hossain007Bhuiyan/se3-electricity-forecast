@@ -244,3 +244,12 @@ def test_range_coverage_and_band(record):
     assert fig.data[1].name == "80% range" and fig.data[1].fill == "tonexty"  # the band is drawn first
     lstm = next(t for t in fig.data if t.name == "LSTM forecast")
     assert "80% range" in lstm.hovertemplate  # the LSTM line shows the range when hovered
+
+
+def test_trend_chart_shows_one_label_per_day():
+    errors = pd.DataFrame({"day": pd.date_range("2026-10-05", periods=8).date, "hours": 24,
+                           "lstm_mae": [0.2, 0.4, 0.18, 0.38, 0.28, 0.11, 0.43, 0.69], "weekly_naive_mae": 0.6})
+    fig = views.trend_chart(live_data.rolling_errors(errors, 7), live_data.rolling_errors(errors, 28))
+    assert list(fig.data[0].x) == ["11 Oct", "12 Oct"] and fig.layout.xaxis.type == "category"
+    assert np.isclose(fig.data[0].y[1], np.mean([0.4, 0.18, 0.38, 0.28, 0.11, 0.43, 0.69]))
+    assert len(fig.data) == 2  # no 28-day line yet
