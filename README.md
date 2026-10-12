@@ -291,6 +291,7 @@ se3-electricity-forecast/
 │   ├── data_download.py      download prices and weather
 │   ├── features.py           the 18 inputs
 │   ├── weather_forecast.py   archived weather forecasts for validation and test
+│   ├── wind_regions.py       wind at 100 m in Sweden's four price zones
 │   ├── evaluate.py           time-based split and error measures
 │   ├── baselines.py          four simple rules
 │   ├── train_lgbm.py         LightGBM, monthly walk-forward
