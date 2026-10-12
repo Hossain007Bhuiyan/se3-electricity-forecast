@@ -332,8 +332,8 @@ se3-electricity-forecast/
 
 The next upgrades, in this order. Each one starts after a few weeks of live data, because it needs that history to be evaluated fairly.
 
-1. **Adaptive prediction intervals.** Ranges that adjust every day to how often the real price fell outside them, with separate ranges for different times of day. The current ranges are slightly too narrow (77% instead of 80% on the test year). New versions are chosen on the validation year and judged on the live record.
-2. **Market data and a challenger model.** A new model with inputs that are published before 12:00: tomorrow's load forecast, yesterday's nuclear, hydro and wind production, hydro reservoir levels and cross-border flows from the ENTSO-E Transparency Platform, plus wind forecasts for Sweden's main wind regions. ENTSO-E's own wind and solar forecasts are published after 12:00, so they are not used. The new model runs next to the LSTM on the live data and replaces it only if it is better over several weeks.
+1. **Market data and a challenger model (in progress).** A new model with inputs that are published before 12:00: tomorrow's load forecast, yesterday's nuclear, hydro and wind production, hydro reservoir levels and cross-border flows from the ENTSO-E Transparency Platform, plus wind forecasts for Sweden's main wind regions. ENTSO-E's own wind and solar forecasts are published after 12:00, so they are not used. The new model runs next to the LSTM on the live data and replaces it only if it is better over several weeks.
+2. **Adaptive prediction intervals.** Ranges that adjust every day to how often the real price fell outside them, with separate ranges for different times of day. The current ranges are slightly too narrow (77% instead of 80% on the test year). New versions are chosen on the validation year and judged on the live record.
 3. **LLM assistant with tools.** An assistant that answers questions about the forecast, explains price movements with the SHAP values and writes daily summaries. It gets every number from the forecast data through tools and never makes numbers up.
 
 ---
