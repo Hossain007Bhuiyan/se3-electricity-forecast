@@ -1,0 +1,62 @@
+# Every day before the 12:00 deadline: record which ENTSO-E data for the next forecast already
+# exists and add the result to availability.csv in the forecast-data branch. After two weeks this
+# file decides which market data the challenger model may use.
+name: availability check
+
+on:
+  schedule:
+    # cron-job.org starts this workflow at 11:30 Swedish time. This GitHub schedule is a backup:
+    # 09:45 UTC = 11:45 Swedish summer time (10:45 in winter). GitHub can start it late. Every
+    # row saves the real time of the check, so a check after 12:00 is never counted as on time.
+    - cron: "45 9 * * *"
+  workflow_dispatch:  # lets cron-job.org (and the "Run workflow" button) start it
+
+permissions:
+  contents: write  # to save availability.csv in the forecast-data branch
+
+# The same group as the daily forecast and the monitoring, so they never write to the
+# forecast-data branch at once
+concurrency:
+  group: daily-forecast
+  cancel-in-progress: false
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    steps:
+      - name: Check out the code
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
+
+      - name: Open the forecast-data branch in the live folder
+        run: |
+          git fetch --depth=1 origin forecast-data:forecast-data
+          git worktree add live forecast-data
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9  # v9.0.0
+        with:
+          enable-cache: true
+
+      - name: Install the exact package versions from uv.lock
+        run: uv sync --locked
+
+      # The token comes from the repository secret and is only given to this one step
+      - name: Run the availability check
+        env:
+          ENTSOE_TOKEN: ${{ secrets.ENTSOE_TOKEN }}
+        run: uv run python -m se3_electricity_forecast.availability live/availability.csv
+
+      - name: Save the result in the forecast-data branch
+        run: |
+          cd live
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add availability.csv
+          if git diff --cached --quiet; then
+            echo "nothing new to save"
+          else
+            git commit -m "Availability check $(date -u '+%Y-%m-%d %H:%M') UTC"
+            git push origin forecast-data
+          fi

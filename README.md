@@ -195,7 +195,7 @@ SHAP values show how a model uses its inputs, not proven causes. Inputs that car
 2. runs the main tests;
 3. runs the PyTorch tests in a separate process, because LightGBM and PyTorch must not share a process.
 
-The **tests** badge at the top shows the result of the latest run. Two more workflows run the live system: **daily forecast** every morning and **monitoring** every day after 12:00 (see below).
+The **tests** badge at the top shows the result of the latest run. Three more workflows run the live system: **daily forecast** every morning, **monitoring** every day after 12:00 and the **availability check** every day at 11:30 (see below).
 
 ---
 
@@ -205,9 +205,10 @@ The **tests** badge at the top shows the result of the latest run. Two more work
 |---|---|
 | **When** | An external timer ([cron-job.org](https://cron-job.org)) starts the forecast at 06:05 and 08:05 Swedish time. GitHub's own schedule runs four more times each morning as a backup, because GitHub can delay or skip scheduled runs. The first forecast made counts; later runs do not change it. |
 | **What** | The workflow downloads the newest prices and a weather forecast, retrains the LSTM at the start of each month, forecasts tomorrow's 24 hours with the LSTM (with an 80% range) and the `weekly_naive` baseline and fills in the real prices of earlier forecasts. |
-| **Where** | The [`forecast-data`](https://github.com/Hossain007Bhuiyan/se3-electricity-forecast/tree/forecast-data) branch: `forecasts.csv` (every forecast hour with its 80% range and the real price), `summary.json` (the live accuracy), `inputs.csv` (the model inputs of every forecast hour) and `monitoring.json` (the latest checks). |
+| **Where** | The [`forecast-data`](https://github.com/Hossain007Bhuiyan/se3-electricity-forecast/tree/forecast-data) branch: `forecasts.csv` (every forecast hour with its 80% range and the real price), `summary.json` (the live accuracy), `inputs.csv` (the model inputs of every forecast hour), `monitoring.json` (the latest checks) and `availability.csv` (the daily ENTSO-E data check). |
 | **Run log** | Every daily run adds one line to `run_log.jsonl` in the forecast-data branch: when it started, what it did, whether the model was retrained, how long it took and the error message if it failed. The dashboard shows the last 14 runs. |
 | **Monitoring** | Every day after 12:00, a second workflow checks that tomorrow's forecast was made before 12:00, that the live error of the last 7 counted days stays below a limit and that the model inputs have not drifted away from the test year. Every alert opens a GitHub issue. The limits come from the test year and are fixed in `results/monitoring_reference.json`. |
+| **Availability check** | Every day at 11:30, a third workflow records which ENTSO-E data for the next forecast already exists: tomorrow's load forecast, yesterday's production per type, yesterday's cross-border flows and last week's hydro reservoir level. The result is added to `availability.csv` in the forecast-data branch. After two weeks it decides which of these inputs the planned challenger model may use. |
 
 ---
 
@@ -306,7 +307,7 @@ se3-electricity-forecast/
 ├── notebooks/                data exploration
 ├── results/                  result tables and the MLflow export
 ├── figures/                  charts
-└── .github/workflows/        tests, daily forecast and monitoring
+└── .github/workflows/        tests, daily forecast, monitoring and availability check
 ```
 
 ---
