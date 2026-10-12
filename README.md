@@ -290,6 +290,7 @@ se3-electricity-forecast/
 ├── src/se3_electricity_forecast/
 │   ├── data_download.py      download prices and weather
 │   ├── features.py           the 18 inputs
+│   ├── market_features.py    market data and regional wind for the challenger
 │   ├── weather_forecast.py   archived weather forecasts for validation and test
 │   ├── wind_regions.py       wind at 100 m in Sweden's four price zones
 │   ├── evaluate.py           time-based split and error measures
