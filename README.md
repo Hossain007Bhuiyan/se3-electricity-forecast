@@ -1,6 +1,6 @@
 # ⚡ SE3 Electricity Price Forecast
 
-**An end-to-end machine learning system that forecasts tomorrow's 24 hourly electricity prices in Sweden's SE3 price zone (Stockholm region), every morning, before the day-ahead prices are published.**
+**A machine learning system that forecasts tomorrow's 24 hourly electricity prices in Sweden's SE3 price zone (Stockholm region), every morning, before the day-ahead prices are published.**
 
 [![Tests](https://img.shields.io/github/actions/workflow/status/Hossain007Bhuiyan/se3-electricity-forecast/tests.yml?branch=main&style=for-the-badge&label=tests&logo=githubactions&logoColor=white)](https://github.com/Hossain007Bhuiyan/se3-electricity-forecast/actions/workflows/tests.yml)
 [![Daily forecast](https://img.shields.io/github/actions/workflow/status/Hossain007Bhuiyan/se3-electricity-forecast/daily_forecast.yml?branch=main&style=for-the-badge&label=daily%20forecast&logo=githubactions&logoColor=white)](https://github.com/Hossain007Bhuiyan/se3-electricity-forecast/actions/workflows/daily_forecast.yml)
