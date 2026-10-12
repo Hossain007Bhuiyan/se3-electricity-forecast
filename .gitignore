@@ -20,3 +20,6 @@ live/
 
 # Helper files Streamlit can install for AI coding assistants (machine-specific)
 .agents/
+
+# Personal API tokens, never in Git
+.env
