@@ -1,10 +1,10 @@
 {
-  "checked_at_utc": "2026-10-11T18:25:04.815466+00:00",
+  "checked_at_utc": "2026-10-12T10:40:52.059799+00:00",
   "checks": {
     "deadline": {
       "status": "ok",
-      "day": "2026-10-12",
-      "message": "The forecast for 2026-10-12 was made at 06:05, before 12:00."
+      "day": "2026-10-13",
+      "message": "The forecast for 2026-10-13 was made at 06:05, before 12:00."
     },
     "error": {
       "status": "alert",
@@ -16,14 +16,14 @@
     },
     "drift": {
       "status": "waiting",
-      "days": 5,
-      "message": "5 of 7 days of inputs so far. The check starts after 7 days."
+      "days": 6,
+      "message": "6 of 7 days of inputs so far. The check starts after 7 days."
     }
   },
   "alerts": [
     {
       "title": "Monitoring alert: live error above limit",
-      "body": "LSTM MAE of the last 7 counted days: 0.351 SEK/kWh, above the limit of 0.319 (baseline: 0.650).\n\nChecked at 2026-10-11 18:25 UTC."
+      "body": "LSTM MAE of the last 7 counted days: 0.351 SEK/kWh, above the limit of 0.319 (baseline: 0.650).\n\nChecked at 2026-10-12 10:40 UTC."
     }
   ]
 }
