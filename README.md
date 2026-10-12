@@ -300,7 +300,10 @@ se3-electricity-forecast/
 │   ├── tracking.py           MLflow tracking and export
 │   ├── daily.py              the daily live forecast
 │   ├── intervals.py          80% ranges around the forecasts
-│   └── monitor.py            daily monitoring checks
+│   ├── monitor.py            daily monitoring checks
+│   ├── entsoe.py             ENTSO-E connection and reader
+│   ├── availability.py       daily check of which ENTSO-E data exists before 12:00
+│   └── entsoe_history.py     ENTSO-E history download
 ├── dashboard/                Streamlit app (app.py, views.py, live_data.py)
 ├── tests/                    main tests
 ├── tests_torch/              PyTorch tests
