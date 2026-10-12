@@ -1,9 +1,9 @@
 {
-  "hours": 192,
-  "days": 8,
-  "lstm_mae": 0.33172631797070157,
-  "weekly_naive_mae": 0.641613828125,
-  "rel_mae": 0.5170186542582966,
-  "range_hours": 24,
-  "range_coverage": 0.08333333333333333
+  "hours": 216,
+  "days": 9,
+  "lstm_mae": 0.33787951616948136,
+  "weekly_naive_mae": 0.6416213657407407,
+  "rel_mae": 0.5266026572843399,
+  "range_hours": 48,
+  "range_coverage": 0.3333333333333333
 }
