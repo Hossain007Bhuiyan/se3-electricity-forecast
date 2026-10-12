@@ -71,3 +71,29 @@ def test_day_period_follows_swedish_time():
     assert entsoe.day_period(pd.Timestamp("2026-10-25", tz="Europe/Stockholm")) == ("202610242200", "202610252300")
     # A normal winter day: midnight in Sweden is 23:00 UTC
     assert entsoe.day_period(pd.Timestamp("2026-11-10", tz="Europe/Stockholm")) == ("202611092300", "202611102300")
+
+
+# Builds a small answer in ENTSO-E's format. A value of None leaves that point out.
+def make_xml(start, step, values, curve="A01", psr=None):
+    end = pd.Timestamp(start) + len(values) * pd.Timedelta(step)
+    points = "".join(f"<Point><position>{i}</position><quantity>{v}</quantity></Point>"
+                     for i, v in enumerate(values, start=1) if v is not None)
+    psr_xml = f"<MktPSRType><psrType>{psr}</psrType></MktPSRType>" if psr else ""
+    return (f'<GL_MarketDocument xmlns="urn:test"><TimeSeries><curveType>{curve}</curveType>{psr_xml}'
+            f'<Period><timeInterval><start>{start}</start><end>{end:%Y-%m-%dT%H:%MZ}</end></timeInterval>'
+            f'<resolution>{step}</resolution>{points}</Period></TimeSeries></GL_MarketDocument>')
+
+
+def test_parse_fills_left_out_values_only_for_curve_a03():
+    values = [5, None, 7, None]
+    a03 = entsoe.parse(make_xml("2026-10-11T22:00Z", "PT15M", values, curve="A03"))
+    assert a03["value"].tolist() == [5, 5, 7, 7]  # left-out values repeat the one before
+    assert a03["time_utc"].iloc[1] == pd.Timestamp("2026-10-11 22:15", tz="UTC")
+    a01 = entsoe.parse(make_xml("2026-10-11T22:00Z", "PT15M", values, curve="A01"))
+    assert a01["value"].isna().sum() == 2  # real gaps stay empty
+
+
+def test_parse_names_the_production_type():
+    data = entsoe.parse(make_xml("2026-10-11T22:00Z", "PT60M", [100, 110], psr="B14"))
+    assert data["kind"].unique().tolist() == ["B14"]
+    assert entsoe.parse(NO_DATA).empty

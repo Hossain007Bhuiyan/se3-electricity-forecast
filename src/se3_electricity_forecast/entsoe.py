@@ -60,6 +60,33 @@ def reason(xml_text):
     text = ET.fromstring(xml_text).find(".//{*}Reason/{*}text")
     return text.text if text is not None else ""
 
+# Turns an answer into a table with one row per time step: the kind of series (the production
+# type for generation, empty for other data), the start time in UTC, the value and the step length.
+# With curve type A03 ENTSO-E leaves out values that repeat the one before, so those are filled in.
+# Other gaps stay empty, so missing data is never hidden.
+def parse(xml_text):
+    parts = []
+    for series in ET.fromstring(xml_text).findall(".//{*}TimeSeries"):
+        psr = series.find(".//{*}psrType")
+        kind = psr.text if psr is not None else ""
+        # For generation, a series with an "out" zone is power used, e.g. for pumping water up
+        if kind and series.find("{*}outBiddingZone_Domain.mRID") is not None:
+            kind += "_consumption"
+        curve = series.find("{*}curveType")
+        for period in series.findall("{*}Period"):
+            start = pd.Timestamp(period.find("{*}timeInterval/{*}start").text)
+            end = pd.Timestamp(period.find("{*}timeInterval/{*}end").text)
+            step = pd.Timedelta(period.find("{*}resolution").text)
+            times = pd.date_range(start, end, freq=step, inclusive="left")
+            values = pd.Series(float("nan"), index=range(1, len(times) + 1))
+            for point in period.findall("{*}Point"):
+                values[int(point.find("{*}position").text)] = float(point.find("{*}quantity").text)
+            if curve is not None and curve.text == "A03":
+                values = values.ffill()
+            parts.append(pd.DataFrame({"kind": kind, "time_utc": times, "value": values.to_numpy(), "step": step}))
+    if not parts:
+        return pd.DataFrame(columns=["kind", "time_utc", "value", "step"])
+    return pd.concat(parts, ignore_index=True)
 
 # A quick test of the token: asks for today's day-ahead load forecast for SE3
 def check():
