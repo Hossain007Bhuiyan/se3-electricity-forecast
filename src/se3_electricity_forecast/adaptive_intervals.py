@@ -114,7 +114,7 @@ def save_scores():
     return scores
 
 
-# The adaptive range for the hours of `forecast` (the next day), the same way as in 14D.1.
+# The adaptive range for the hours of `forecast` (the next day).
 # Errors: the saved test-year errors plus every earlier live hour with a known price. The levels are
 # replayed from the first live day on every run, so no state has to be stored and a repeated run
 # gives the same answer. Returns lower and upper in the order of `forecast` (empty if not possible).

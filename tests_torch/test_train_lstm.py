@@ -11,7 +11,7 @@ TZ = "Europe/Stockholm"
 
 
 def test_lightgbm_is_not_loaded():
-    # The LSTM code must never load LightGBM (the OpenMP rule from Step 6C)
+    # The LSTM code must never load LightGBM
     assert "lightgbm" not in sys.modules
 
 

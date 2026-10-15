@@ -10,7 +10,7 @@ TZ = "Europe/Stockholm"
 
 
 def test_pytorch_is_not_loaded():
-    # No test in this folder may load PyTorch, since LightGBM runs here (the OpenMP rule from Step 6C)
+    # No test in this folder may load PyTorch, since LightGBM runs here
     assert "torch" not in sys.modules
 
 

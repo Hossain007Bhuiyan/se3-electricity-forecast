@@ -3,7 +3,7 @@
 #
 # One run does four things:
 #   1. update the price history (after the first run, only the newest days are downloaded)
-#   2. retrain the LSTM once a month, the same way as in the walk-forward evaluation (Step 6B)
+#   2. retrain the LSTM once a month, the same way as in the walk-forward evaluation
 #   3. forecast every hour of tomorrow (Swedish time) with the LSTM and the weekly_naive baseline,
 #      using a real weather forecast and only prices that are already published
 #   4. add the forecast to the live record and fill in the real prices of earlier forecasts

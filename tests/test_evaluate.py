@@ -15,7 +15,7 @@ def test_split_is_by_time_and_has_the_expected_sizes():
     assert train["time_local"].max() < VALID_START <= valid["time_local"].min()
     assert valid["time_local"].max() < TEST_START <= test["time_local"].min()
     assert test["time_local"].max() < TEST_END
-    # One full year for validation, and the test year up to 26 Sep 2026 (the same as in Step 5)
+    # One full year for validation, and the test year up to 26 Sep 2026
     assert len(valid) == 8760
     assert len(test) == 8664
 
