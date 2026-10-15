@@ -197,3 +197,32 @@ def test_failed_run_is_logged_and_still_fails(folders, monkeypatch):
     run = json.loads(daily.RUN_LOG.read_text())
     assert run["status"] == "failed" and run["error"] == "ConnectionError: price API not reachable"
     assert not daily.RECORD.exists()  # nothing else is written
+
+def test_adaptive_range_runs_next_to_the_current_one(tmp_path, monkeypatch):
+    # Saved test-year errors for the 60 days before the forecast day, 21 Oct 2025
+    times = pd.date_range(pd.Timestamp("2025-08-22", tz=TZ), pd.Timestamp("2025-10-21", tz=TZ), freq="h",
+                          inclusive="left").tz_convert("UTC")
+    scores = np.random.default_rng(0).normal(0, 0.1, len(times)).round(6)
+    path = tmp_path / "interval_scores.csv"
+    pd.DataFrame({"time_utc": times, "score": scores}).to_csv(path, index=False)
+    monkeypatch.setattr(daily.adaptive_intervals, "SCORES", path)
+
+    hours = make_prices("2025-10-21", "2025-10-22")
+    forecast = pd.DataFrame({"time_utc": hours["time_utc"], "time_local": hours["time_local"],
+                             "issued_before_noon": True, "lstm": 1.0, "weekly_naive": 1.2})
+    forecast = daily.add_adaptive_ranges(forecast, None)
+    assert np.allclose(forecast["adaptive_low"], 1.0 + np.quantile(scores, 0.1))
+    assert np.allclose(forecast["adaptive_high"], 1.0 + np.quantile(scores, 0.9))
+
+    # The summary counts the adaptive range on its own, next to the current one
+    record = forecast.assign(actual=1.0, lstm_low=1.5, lstm_high=2.0)
+    summary = daily.summarize(record)
+    assert summary["adaptive_hours"] == 24 and summary["adaptive_coverage"] == 1
+    assert summary["range_hours"] == 24 and summary["range_coverage"] == 0
+    assert np.isclose(summary["range_width"], 0.5)
+    assert np.isclose(summary["adaptive_width"], np.quantile(scores, 0.9) - np.quantile(scores, 0.1))
+
+    # A problem with the adaptive range never stops the forecast: its columns just stay empty
+    monkeypatch.setattr(daily.adaptive_intervals, "SCORES", tmp_path / "missing.csv")
+    empty = daily.add_adaptive_ranges(forecast.drop(columns=["adaptive_low", "adaptive_high"]), None)
+    assert empty["adaptive_low"].isna().all() and empty["adaptive_high"].isna().all()

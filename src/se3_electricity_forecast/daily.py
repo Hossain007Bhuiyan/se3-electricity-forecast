@@ -22,7 +22,7 @@ import pandas as pd
 import requests
 import torch
 
-from se3_electricity_forecast import data_download, intervals, train_lstm
+from se3_electricity_forecast import adaptive_intervals, data_download, intervals, train_lstm
 from se3_electricity_forecast.baselines import baseline_predictions
 from se3_electricity_forecast.evaluate import TZ
 from se3_electricity_forecast.features import (
@@ -217,13 +217,16 @@ def summarize(record):
         lstm_mae = float((done["actual"] - done["lstm"]).abs().mean())
         naive_mae = float((done["actual"] - done["weekly_naive"]).abs().mean())
         summary.update({"lstm_mae": lstm_mae, "weekly_naive_mae": naive_mae, "rel_mae": lstm_mae / naive_mae})
-    # Share of counted hours whose real price fell inside the 80% range (forecasts from before
-    # the ranges were added have none, so they are left out)
-    if "lstm_low" in done:
-        ranged = done[done["lstm_low"].notna()]
-        if len(ranged):
-            inside = (ranged["actual"] >= ranged["lstm_low"]) & (ranged["actual"] <= ranged["lstm_high"])
-            summary.update({"range_hours": int(len(ranged)), "range_coverage": float(inside.mean())})
+    # Share of counted hours whose real price fell inside the 80% range, for the current range and
+    # for the adaptive one that runs next to it (forecasts from before a range was added have none,
+    # so they are left out)
+    for name, low, high in [("range", "lstm_low", "lstm_high"), ("adaptive", "adaptive_low", "adaptive_high")]:
+        if low in done:
+            ranged = done[done[low].notna()]
+            if len(ranged):
+                inside = (ranged["actual"] >= ranged[low]) & (ranged["actual"] <= ranged[high])
+                summary.update({f"{name}_hours": int(len(ranged)), f"{name}_coverage": float(inside.mean()),
+                                f"{name}_width": float((ranged[high] - ranged[low]).mean())})
     return summary
 
 
@@ -243,7 +246,18 @@ def add_ranges(forecast, rows):
     cal = json.loads(intervals.CALIBRATION.read_text())
     scale = intervals.scale_values(rows, cal["scale"])
     return forecast.assign(lstm_low=forecast["lstm"].to_numpy() + scale * cal["q_low"],
+
                            lstm_high=forecast["lstm"].to_numpy() + scale * cal["q_high"])
+
+# Step: the adaptive 80% range runs next to the current one as a test (see adaptive_intervals.py).
+# It must never stop the forecast: if it fails, its columns stay empty and the reason is logged.
+def add_adaptive_ranges(forecast, record):
+    try:
+        ranges = adaptive_intervals.live_ranges(record, forecast)
+    except Exception as error:
+        log.warning(f"adaptive range not made: {type(error).__name__}: {error}")
+        return forecast.assign(adaptive_low=np.nan, adaptive_high=np.nan)
+    return forecast.assign(adaptive_low=ranges["lower"].to_numpy(), adaptive_high=ranges["upper"].to_numpy())
 
 # Adds one line to the run log. Every line is a small JSON object, so the file is easy to read
 # both by people and by the dashboard, and a new line never changes the earlier ones.
@@ -291,10 +305,12 @@ def run(now):
         "weekly_naive": np.asarray(baseline_predictions(rows)["weekly_naive"]),
     })
     forecast = add_ranges(forecast, rows)
-    log.info("forecast:\n" + forecast[["time_local", "lstm_low", "lstm", "lstm_high", "weekly_naive"]].round(
-        {"lstm_low": 3, "lstm": 3, "lstm_high": 3, "weekly_naive": 3}).to_string(index=False))
-
     old = read_record()
+    # The record with today's known prices filled in, so the adaptive range learns from every known day
+    forecast = add_adaptive_ranges(forecast, update_record(old, forecast, prices))
+    log.info("forecast:\n" + forecast[["time_local", "lstm_low", "lstm", "lstm_high", "adaptive_low", "adaptive_high",
+                                        "weekly_naive"]].round(3).to_string(index=False))
+
     record = update_record(old, forecast, prices)
     LIVE.mkdir(parents=True, exist_ok=True)
     record.to_csv(RECORD, index=False)

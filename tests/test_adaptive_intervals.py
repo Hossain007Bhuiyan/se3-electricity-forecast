@@ -89,3 +89,42 @@ def test_monthly_coverage_on_a_tiny_example():
     m = ai.monthly_coverage(df)
     assert np.isclose(m["month_gap"], (0.3 + 0.2) / 2)  # January 50%, February 100%
     assert np.isclose(m["worst_month"], 0.5)
+
+
+# Saved test-year errors for the days before 1 Mar 2026 and one forecast day, 1 Mar 2026
+def live_setup(tmp_path, monkeypatch, days=60):
+    rng = np.random.default_rng(1)
+    start = pd.Timestamp("2026-03-01", tz=TZ) - pd.Timedelta(days=days)
+    times = pd.date_range(start, pd.Timestamp("2026-03-01", tz=TZ), freq="h", inclusive="left").tz_convert("UTC")
+    path = tmp_path / "interval_scores.csv"
+    pd.DataFrame({"time_utc": times, "score": rng.normal(0, 0.1, len(times)).round(6)}).to_csv(path, index=False)
+    monkeypatch.setattr(ai, "SCORES", path)
+    day = pd.date_range(pd.Timestamp("2026-03-01", tz=TZ), periods=24, freq="h")
+    forecast = pd.DataFrame({"time_utc": day.tz_convert("UTC"), "time_local": day, "lstm": 1.0})
+    return pd.read_csv(path)["score"], forecast
+
+
+def test_live_range_on_the_first_run_uses_the_saved_errors(tmp_path, monkeypatch):
+    scores, forecast = live_setup(tmp_path, monkeypatch)
+    ranges = ai.live_ranges(None, forecast)
+    assert np.allclose(ranges["lower"], 1.0 + np.quantile(scores, 0.1))
+    assert np.allclose(ranges["upper"], 1.0 + np.quantile(scores, 0.9))
+
+
+def test_live_range_learns_from_earlier_live_days_only(tmp_path, monkeypatch):
+    _, forecast = live_setup(tmp_path, monkeypatch, days=90)
+    first = ai.live_ranges(None, forecast)
+    # Ten live days before the forecast day whose prices were far above every forecast
+    days = pd.date_range(pd.Timestamp("2026-02-19", tz=TZ), pd.Timestamp("2026-03-01", tz=TZ), freq="h", inclusive="left")
+    record = pd.DataFrame({"time_utc": days.tz_convert("UTC"), "time_local": days, "lstm": 1.0, "actual": 2.0})
+    learned = ai.live_ranges(record, forecast)
+    assert (learned["upper"] > first["upper"]).all()  # the upper edge moved up after the misses
+    # Prices of the forecast day itself (known to a run after 13:00) must not change anything
+    late = pd.concat([record, forecast.assign(actual=50.0)], ignore_index=True)
+    assert np.allclose(ai.live_ranges(late, forecast)["upper"], learned["upper"])
+
+
+def test_live_range_stays_empty_without_enough_errors(tmp_path, monkeypatch):
+    _, forecast = live_setup(tmp_path, monkeypatch, days=10)
+    ranges = ai.live_ranges(None, forecast)
+    assert len(ranges) == 24 and ranges["lower"].isna().all()

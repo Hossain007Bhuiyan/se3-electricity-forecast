@@ -243,9 +243,15 @@ def live_accuracy_page():
         coverage = live_data.range_coverage(record)
         if coverage is not None:
             hours, share = coverage
-            st.markdown('<div class="cards">'
-                        + card("Inside the 80% range", f"{share:.0%}", "", f"of {hours} counted hours (target 80%, test year 77%)")
-                        + '</div>', unsafe_allow_html=True)
+            cards = card("Inside the 80% range", f"{share:.0%}", "", f"of {hours} counted hours (target 80%, test year 77%)")
+            # The adaptive range runs next to the current one as a test and is not drawn in the charts
+            adaptive = live_data.range_coverage(record, "adaptive_low", "adaptive_high")
+            widths = live_data.range_widths(record)
+            if adaptive is not None and widths is not None:
+                cards += card("Inside the adaptive range", f"{adaptive[1]:.0%}", "",
+                              f"test run, {adaptive[0]} counted hours, average width {widths[1]:.2f} SEK/kWh "
+                              f"(current range {widths[0]:.2f} on the same hours)")
+            st.markdown('<div class="cards">' + cards + '</div>', unsafe_allow_html=True)
 
         week = live_data.rolling_errors(errors, 7)
         if week.empty:

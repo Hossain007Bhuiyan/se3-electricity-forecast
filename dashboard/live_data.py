@@ -92,15 +92,28 @@ def daily_errors(record):
             .reset_index())
 
 # How many counted hours have an 80% range, and the share of them whose real price fell inside.
-# None while no counted forecast has a range yet.
-def range_coverage(record):
-    if "lstm_low" not in record:
+# None while no counted forecast has a range yet. low and high name the range: the current one
+# (lstm_low, lstm_high) or the adaptive one that runs next to it (adaptive_low, adaptive_high).
+def range_coverage(record, low="lstm_low", high="lstm_high"):
+    if low not in record:
         return None
-    done = record[record["actual"].notna() & record["issued_before_noon"] & record["lstm_low"].notna()]
+    done = record[record["actual"].notna() & record["issued_before_noon"] & record[low].notna()]
     if done.empty:
         return None
-    inside = (done["actual"] >= done["lstm_low"]) & (done["actual"] <= done["lstm_high"])
+    inside = (done["actual"] >= done[low]) & (done["actual"] <= done[high])
     return int(len(done)), float(inside.mean())
+
+# Average width (SEK/kWh) of the current and the adaptive range over the same counted hours, so
+# the two can be compared fairly. A range that is always very wide catches every price, so its
+# coverage only means something together with its width. None while no hour has both ranges.
+def range_widths(record):
+    if "adaptive_low" not in record:
+        return None
+    both = record[record["actual"].notna() & record["issued_before_noon"] & record["lstm_low"].notna()
+                  & record["adaptive_low"].notna()]
+    if both.empty:
+        return None
+    return float((both["lstm_high"] - both["lstm_low"]).mean()), float((both["adaptive_high"] - both["adaptive_low"]).mean())
 
 # MAE over every window of `days` counted days in a row, weighted by hours, for the LSTM and the
 # baseline. Empty until there are at least `days` counted days.

@@ -245,6 +245,15 @@ def test_range_coverage_and_band(record):
     lstm = next(t for t in fig.data if t.name == "LSTM forecast")
     assert "80% range" in lstm.hovertemplate  # the LSTM line shows the range when hovered
 
+def test_adaptive_range_coverage_is_counted_on_its_own(record):
+    ranged = record.assign(lstm_low=record["actual"] - 0.05, lstm_high=record["actual"] + 0.05)
+    assert live_data.range_coverage(ranged, "adaptive_low", "adaptive_high") is None  # no adaptive range yet
+    both = ranged.assign(adaptive_low=ranged["actual"] + 0.01, adaptive_high=ranged["actual"] + 0.1)  # all miss
+    hours, share = live_data.range_coverage(both, "adaptive_low", "adaptive_high")
+    assert hours == 24 and share == 0
+    assert live_data.range_coverage(both) == (24, 1.0)  # the current range is not affected
+    current, adaptive = live_data.range_widths(both)
+    assert np.isclose(current, 0.1) and np.isclose(adaptive, 0.09)  # widths over the same counted hours
 
 def test_trend_chart_shows_one_label_per_day():
     errors = pd.DataFrame({"day": pd.date_range("2026-10-05", periods=8).date, "hours": 24,

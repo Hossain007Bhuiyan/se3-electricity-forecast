@@ -1,4 +1,4 @@
-# Step 14D: adaptive 80% ranges. The current ranges (intervals.py) use one fixed pair of error
+# This steps adaptive 80% ranges. The current ranges (intervals.py) use one fixed pair of error
 # quantiles for every hour. When prices behave differently than in the calibration year, the range
 # is too narrow for weeks. Two known improvements are compared here:
 #
@@ -12,14 +12,17 @@
 # made, the prices of that day and all days before are already published. The version is chosen on
 # the validation year with a rule fixed before running (see choose). The test year is not used again:
 # a new version is judged on the live record, next to the current one.
-#     uv run python -m se3_electricity_forecast.adaptive_intervals
+#     uv run python -m se3_electricity_forecast.adaptive_intervals          compare on the validation year
+#     uv run python -m se3_electricity_forecast.adaptive_intervals scores   save the test-year errors for live use
+# Step 14D.2: the chosen version runs next to the current ranges in the daily forecast (live_ranges).
 # Only pandas and NumPy are used here, no model library.
 
+import sys
 import numpy as np
 import pandas as pd
-from se3_electricity_forecast.evaluate import TEST_START, VALID_START
-from se3_electricity_forecast.intervals import (CAL_DAYS, FEATURES, LOWER_Q, MIN_CAL_DAYS, RESULTS, UPPER_Q,
-                                                VALID_PREDICTIONS, add_intervals, interval_metrics)
+from se3_electricity_forecast.evaluate import TEST_START, TZ, VALID_START
+from se3_electricity_forecast.intervals import (CAL_DAYS, FEATURES, LOWER_Q, MIN_CAL_DAYS, RESULTS, TEST_PREDICTIONS,
+                                                UPPER_Q, VALID_PREDICTIONS, add_intervals, interval_metrics)
 
 TARGET = UPPER_Q - LOWER_Q  # 0.8
 # gamma = 0 means no adapting, so "mondrian" alone is also in the list
@@ -29,6 +32,10 @@ for gamma in [0.01, 0.03, 0.05]:
 VERSIONS.append({"name": "mondrian", "gamma": 0.0, "mondrian": True})
 for gamma in [0.01, 0.03, 0.05]:
     VERSIONS.append({"name": f"adaptive + mondrian g={gamma}", "gamma": gamma, "mondrian": True})
+# The winner on the validation year (results/intervals_adaptive_validation.csv)
+CHOSEN = {"gamma": 0.05, "mondrian": False}
+# The LSTM's errors on the test year. The daily run on GitHub has no data/ folder, so these are saved here.
+SCORES = RESULTS / "interval_scores.csv"
 
 
 def time_block(time_local):
@@ -62,6 +69,8 @@ def adaptive_intervals(preds, features, start, end, gamma, mondrian):
             level[0] += gamma * (LOWER_Q - (rows["actual"] < lower).mean())
             level[1] += gamma * ((rows["actual"] > upper).mean() - (1 - UPPER_Q))
         parts.append(today)
+    if not parts:
+        return pd.DataFrame(columns=[*df.columns.drop(["score", "day", "group"]), "lower", "upper"])
     return pd.concat(parts, ignore_index=True).drop(columns=["score", "day", "group"])
 
 
@@ -97,7 +106,46 @@ def choose(result):
     return result.sort_values(["month_gap", "interval_score"]).reset_index(drop=True)
 
 
+# Saves the test-year errors (actual minus forecast) that the live ranges start from
+def save_scores():
+    test = pd.read_parquet(TEST_PREDICTIONS)
+    scores = pd.DataFrame({"time_utc": test["time_utc"], "score": (test["actual"] - test["prediction"]).round(6)})
+    scores.to_csv(SCORES, index=False)
+    return scores
+
+
+# The adaptive range for the hours of `forecast` (the next day), the same way as in 14D.1.
+# Errors: the saved test-year errors plus every earlier live hour with a known price. The levels are
+# replayed from the first live day on every run, so no state has to be stored and a repeated run
+# gives the same answer. Returns lower and upper in the order of `forecast` (empty if not possible).
+def live_ranges(record, forecast):
+    saved = pd.read_csv(SCORES)
+    saved["time_utc"] = pd.to_datetime(saved["time_utc"], utc=True)
+    day_start = forecast["time_local"].min()
+    if record is None:  # the very first run has no live record yet
+        record = forecast.iloc[:0].assign(actual=np.nan)
+    # Only days before the forecast day: a run after 13:00 already knows the next day's prices
+    done = record[record["actual"].notna() & (record["time_local"] < day_start)]
+    # A saved error is used as a forecast of 0 with the error as the price, which gives the same score
+    preds = pd.concat([
+        pd.DataFrame({"time_utc": saved["time_utc"], "prediction": 0.0, "actual": saved["score"]}),
+        pd.DataFrame({"time_utc": done["time_utc"], "prediction": done["lstm"], "actual": done["actual"]}),
+        pd.DataFrame({"time_utc": forecast["time_utc"], "prediction": forecast["lstm"], "actual": np.nan}),
+    ], ignore_index=True).drop_duplicates("time_utc", keep="last")
+    features = pd.DataFrame({"time_utc": preds["time_utc"], "time_local": preds["time_utc"].dt.tz_convert(TZ)})
+    start = done["time_local"].min().normalize() if len(done) else day_start
+    end = forecast["time_local"].max() + pd.Timedelta(hours=1)
+    ranges = adaptive_intervals(preds, features, start, end, CHOSEN["gamma"], CHOSEN["mondrian"])
+    if ranges.empty:  # fewer than MIN_CAL_DAYS days of errors
+        return forecast[["time_utc"]].assign(lower=np.nan, upper=np.nan)
+    return forecast[["time_utc"]].merge(ranges[["time_utc", "lower", "upper"]], on="time_utc", how="left")
+
+
 def main():
+    if sys.argv[1:] == ["scores"]:
+        scores = save_scores()
+        print(f"saved {len(scores)} test-year errors from {scores['time_utc'].min()} to {scores['time_utc'].max()}")
+        return
     features = pd.read_parquet(FEATURES)
     valid = pd.read_parquet(VALID_PREDICTIONS)
     result = choose(compare_versions(valid, features, VALID_START, TEST_START))
