@@ -302,6 +302,7 @@ se3-electricity-forecast/
 │   ├── tracking.py           MLflow tracking and export
 │   ├── daily.py              the daily live forecast
 │   ├── intervals.py          80% ranges around the forecasts
+│   ├── adaptive_intervals.py adaptive 80% ranges, compared on the validation year
 │   ├── monitor.py            daily monitoring checks
 │   ├── entsoe.py             ENTSO-E connection and reader
 │   ├── availability.py       daily check of which ENTSO-E data exists before 12:00
