@@ -5,5 +5,6 @@
   "weekly_naive_mae": 0.6402987413194445,
   "rel_mae": 0.5786722340286515,
   "range_hours": 120,
-  "range_coverage": 0.3333333333333333
+  "range_coverage": 0.3333333333333333,
+  "range_width": 0.6545294527710976
 }
