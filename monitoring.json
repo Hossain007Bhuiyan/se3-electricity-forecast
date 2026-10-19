@@ -1,5 +1,5 @@
 {
-  "checked_at_utc": "2026-10-19T10:41:01.706201+00:00",
+  "checked_at_utc": "2026-10-19T17:09:18.793552+00:00",
   "checks": {
     "deadline": {
       "status": "ok",
@@ -8,11 +8,11 @@
     },
     "error": {
       "status": "alert",
-      "days": 15,
-      "lstm_mae": 0.42129226296563327,
-      "weekly_naive_mae": 0.5177574553571429,
+      "days": 16,
+      "lstm_mae": 0.38862166236566553,
+      "weekly_naive_mae": 0.4551243898809524,
       "limit": 0.3194472476255649,
-      "message": "LSTM MAE of the last 7 counted days: 0.421 SEK/kWh, above the limit of 0.319 (baseline: 0.518)."
+      "message": "LSTM MAE of the last 7 counted days: 0.389 SEK/kWh, above the limit of 0.319 (baseline: 0.455)."
     },
     "drift": {
       "status": "alert",
@@ -50,11 +50,11 @@
   "alerts": [
     {
       "title": "Monitoring alert: live error above limit",
-      "body": "LSTM MAE of the last 7 counted days: 0.421 SEK/kWh, above the limit of 0.319 (baseline: 0.518).\n\nChecked at 2026-10-19 10:41 UTC."
+      "body": "LSTM MAE of the last 7 counted days: 0.389 SEK/kWh, above the limit of 0.319 (baseline: 0.455).\n\nChecked at 2026-10-19 17:09 UTC."
     },
     {
       "title": "Monitoring alert: input drift",
-      "body": "These inputs differ from the same month in the test year: prev_day_max, prev_7d_mean, prev_day_std, prev_day_mean, prev_day_min, price_lag_24h, price_lag_48h, price_lag_168h.\n\nChecked at 2026-10-19 10:41 UTC."
+      "body": "These inputs differ from the same month in the test year: prev_day_max, prev_7d_mean, prev_day_std, prev_day_mean, prev_day_min, price_lag_24h, price_lag_48h, price_lag_168h.\n\nChecked at 2026-10-19 17:09 UTC."
     }
   ]
 }
