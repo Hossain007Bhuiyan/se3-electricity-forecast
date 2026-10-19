@@ -1,10 +1,10 @@
 {
-  "checked_at_utc": "2026-10-18T16:50:16.850430+00:00",
+  "checked_at_utc": "2026-10-19T10:41:01.706201+00:00",
   "checks": {
     "deadline": {
       "status": "ok",
-      "day": "2026-10-19",
-      "message": "The forecast for 2026-10-19 was made at 06:05, before 12:00."
+      "day": "2026-10-20",
+      "message": "The forecast for 2026-10-20 was made at 06:05, before 12:00."
     },
     "error": {
       "status": "alert",
@@ -16,45 +16,45 @@
     },
     "drift": {
       "status": "alert",
-      "days": 12,
+      "days": 13,
       "month": 10,
       "limit": 0.25,
       "psi": {
-        "price_lag_24h": 0.6650560867473837,
-        "price_lag_48h": 0.2899739293348468,
-        "price_lag_168h": 0.22533450563396423,
-        "prev_day_mean": 3.747002840428289,
-        "prev_day_min": 3.1762734904787333,
-        "prev_day_max": 4.330302774015421,
-        "prev_day_std": 3.92838583386113,
-        "prev_7d_mean": 3.8542404665534202,
-        "temperature_2m": 0.26866353900901624,
-        "wind_speed_10m": 0.1868083481227399,
-        "precipitation": 0.08179825141311665,
-        "cloud_cover": 0.21194131266801985,
-        "shortwave_radiation": 0.11941084864171744
+        "price_lag_24h": 0.7205622066575212,
+        "price_lag_48h": 0.2890972219775273,
+        "price_lag_168h": 0.2753240175035033,
+        "prev_day_mean": 3.7827263473216006,
+        "prev_day_min": 3.1522605454401815,
+        "prev_day_max": 4.408185671229999,
+        "prev_day_std": 3.852959056436108,
+        "prev_7d_mean": 3.9054051928297824,
+        "temperature_2m": 0.19196873884940482,
+        "wind_speed_10m": 0.13379071936752135,
+        "precipitation": 0.060757684402340965,
+        "cloud_cover": 0.20685917804738674,
+        "shortwave_radiation": 0.1111746726143788
       },
       "drifted": [
         "prev_day_max",
-        "prev_day_std",
         "prev_7d_mean",
+        "prev_day_std",
         "prev_day_mean",
         "prev_day_min",
         "price_lag_24h",
         "price_lag_48h",
-        "temperature_2m"
+        "price_lag_168h"
       ],
-      "message": "These inputs differ from the same month in the test year: prev_day_max, prev_day_std, prev_7d_mean, prev_day_mean, prev_day_min, price_lag_24h, price_lag_48h, temperature_2m."
+      "message": "These inputs differ from the same month in the test year: prev_day_max, prev_7d_mean, prev_day_std, prev_day_mean, prev_day_min, price_lag_24h, price_lag_48h, price_lag_168h."
     }
   },
   "alerts": [
     {
       "title": "Monitoring alert: live error above limit",
-      "body": "LSTM MAE of the last 7 counted days: 0.421 SEK/kWh, above the limit of 0.319 (baseline: 0.518).\n\nChecked at 2026-10-18 16:50 UTC."
+      "body": "LSTM MAE of the last 7 counted days: 0.421 SEK/kWh, above the limit of 0.319 (baseline: 0.518).\n\nChecked at 2026-10-19 10:41 UTC."
     },
     {
       "title": "Monitoring alert: input drift",
-      "body": "These inputs differ from the same month in the test year: prev_day_max, prev_day_std, prev_7d_mean, prev_day_mean, prev_day_min, price_lag_24h, price_lag_48h, temperature_2m.\n\nChecked at 2026-10-18 16:50 UTC."
+      "body": "These inputs differ from the same month in the test year: prev_day_max, prev_7d_mean, prev_day_std, prev_day_mean, prev_day_min, price_lag_24h, price_lag_48h, price_lag_168h.\n\nChecked at 2026-10-19 10:41 UTC."
     }
   ]
 }
