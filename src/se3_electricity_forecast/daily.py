@@ -309,8 +309,8 @@ def run(now):
     # The record with today's known prices filled in, so the adaptive range learns from every known day
     forecast = add_adaptive_ranges(forecast, update_record(old, forecast, prices))
     log.info("forecast:\n" + forecast[["time_local", "lstm_low", "lstm", "lstm_high", "adaptive_low", "adaptive_high",
-                                        "weekly_naive"]].round(3).to_string(index=False))
-
+                                        "weekly_naive"]].round({"lstm_low": 3, "lstm": 3, "lstm_high": 3, "adaptive_low": 3,
+                                                                "adaptive_high": 3, "weekly_naive": 3}).to_string(index=False))
     record = update_record(old, forecast, prices)
     LIVE.mkdir(parents=True, exist_ok=True)
     record.to_csv(RECORD, index=False)
