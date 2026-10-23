@@ -1,13 +1,13 @@
 {
-  "hours": 456,
-  "days": 19,
-  "lstm_mae": 0.34719936133199886,
-  "weekly_naive_mae": 0.5369284978070176,
-  "rel_mae": 0.6466398463670091,
-  "range_hours": 288,
-  "range_coverage": 0.4826388888888889,
-  "range_width": 0.6545294527710978,
-  "adaptive_hours": 168,
-  "adaptive_coverage": 0.8630952380952381,
-  "adaptive_width": 1.133526818107321
+  "hours": 480,
+  "days": 20,
+  "lstm_mae": 0.3345210505066419,
+  "weekly_naive_mae": 0.5248814322916667,
+  "rel_mae": 0.637326889324511,
+  "range_hours": 312,
+  "range_coverage": 0.5224358974358975,
+  "range_width": 0.6545294527710979,
+  "adaptive_hours": 192,
+  "adaptive_coverage": 0.8802083333333334,
+  "adaptive_width": 1.1191507502561595
 }
