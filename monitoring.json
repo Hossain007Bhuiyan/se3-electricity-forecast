@@ -1,5 +1,5 @@
 {
-  "checked_at_utc": "2026-10-25T11:40:53.148456+00:00",
+  "checked_at_utc": "2026-10-25T14:33:17.821053+00:00",
   "checks": {
     "deadline": {
       "status": "ok",
@@ -8,11 +8,11 @@
     },
     "error": {
       "status": "ok",
-      "days": 21,
-      "lstm_mae": 0.19137586989519545,
-      "weekly_naive_mae": 0.44464997041420123,
+      "days": 22,
+      "lstm_mae": 0.17193576968602814,
+      "weekly_naive_mae": 0.5599963905325445,
       "limit": 0.3194472476255649,
-      "message": "LSTM MAE of the last 7 counted days: 0.191 SEK/kWh, within the limit of 0.319 (baseline: 0.445)."
+      "message": "LSTM MAE of the last 7 counted days: 0.172 SEK/kWh, within the limit of 0.319 (baseline: 0.560)."
     },
     "drift": {
       "status": "alert",
@@ -52,7 +52,7 @@
   "alerts": [
     {
       "title": "Monitoring alert: input drift",
-      "body": "These inputs differ from the same month in the test year: prev_7d_mean, prev_day_max, prev_day_std, prev_day_mean, prev_day_min, price_lag_48h, wind_speed_10m, price_lag_168h, temperature_2m, cloud_cover.\n\nChecked at 2026-10-25 11:40 UTC."
+      "body": "These inputs differ from the same month in the test year: prev_7d_mean, prev_day_max, prev_day_std, prev_day_mean, prev_day_min, price_lag_48h, wind_speed_10m, price_lag_168h, temperature_2m, cloud_cover.\n\nChecked at 2026-10-25 14:33 UTC."
     }
   ]
 }
