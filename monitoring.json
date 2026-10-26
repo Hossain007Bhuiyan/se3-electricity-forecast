@@ -1,5 +1,5 @@
 {
-  "checked_at_utc": "2026-10-26T16:58:28.633794+00:00",
+  "checked_at_utc": "2026-10-26T19:31:38.238527+00:00",
   "checks": {
     "deadline": {
       "status": "ok",
@@ -50,7 +50,7 @@
   "alerts": [
     {
       "title": "Monitoring alert: input drift",
-      "body": "These inputs differ from the same month in the test year: prev_7d_mean, prev_day_max, prev_day_std, prev_day_mean, prev_day_min, price_lag_168h, wind_speed_10m, temperature_2m.\n\nChecked at 2026-10-26 16:58 UTC."
+      "body": "These inputs differ from the same month in the test year: prev_7d_mean, prev_day_max, prev_day_std, prev_day_mean, prev_day_min, price_lag_168h, wind_speed_10m, temperature_2m.\n\nChecked at 2026-10-26 19:31 UTC."
     }
   ]
 }
