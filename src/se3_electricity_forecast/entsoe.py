@@ -77,7 +77,9 @@ def parse(xml_text):
             start = pd.Timestamp(period.find("{*}timeInterval/{*}start").text)
             end = pd.Timestamp(period.find("{*}timeInterval/{*}end").text)
             step = pd.Timedelta(period.find("{*}resolution").text)
-            times = pd.date_range(start, end, freq=step, inclusive="left")
+            # The number of steps comes from the length of the period, rounded. A week across the
+            # autumn clock change is 7 days and 1 hour long and must still be one weekly value, not two.
+            times = pd.date_range(start, periods=round((end - start) / step), freq=step)
             values = pd.Series(float("nan"), index=range(1, len(times) + 1))
             for point in period.findall("{*}Point"):
                 values[int(point.find("{*}position").text)] = float(point.find("{*}quantity").text)

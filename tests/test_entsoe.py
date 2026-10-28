@@ -97,3 +97,15 @@ def test_parse_names_the_production_type():
     data = entsoe.parse(make_xml("2026-10-11T22:00Z", "PT60M", [100, 110], psr="B14"))
     assert data["kind"].unique().tolist() == ["B14"]
     assert entsoe.parse(NO_DATA).empty
+
+
+def test_parse_counts_a_week_across_the_clock_change_once():
+    # The week 19-25 Oct 2026 ends when summer time ends, so it is 7 days and 1 hour long
+    week = ('<GL_MarketDocument xmlns="urn:test"><TimeSeries><curveType>A03</curveType><Period><timeInterval>'
+            '<start>2026-10-18T22:00Z</start><end>2026-10-25T23:00Z</end></timeInterval><resolution>P7D</resolution>'
+            '<Point><position>1</position><quantity>25000000</quantity></Point></Period></TimeSeries></GL_MarketDocument>')
+    data = entsoe.parse(week)
+    assert len(data) == 1 and data["time_utc"].iloc[0] == pd.Timestamp("2026-10-18 22:00", tz="UTC")
+    # A day with 25 hours still gets all its 100 quarter-hours
+    day = make_xml("2026-10-24T22:00Z", "PT15M", [1.0] * 100)
+    assert len(entsoe.parse(day)) == 100
