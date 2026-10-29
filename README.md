@@ -195,7 +195,7 @@ SHAP values show how a model uses its inputs, not proven causes. Inputs that car
 2. runs the main tests;
 3. runs the PyTorch tests in a separate process, because LightGBM and PyTorch must not share a process.
 
-The **tests** badge at the top shows the result of the latest run. Three more workflows run the live system: **daily forecast** every morning, **monitoring** every day after 12:00 and the **availability check** every day at 11:30 (see below).
+The **tests** badge at the top shows the result of the latest run. Three more workflows run the live system: **daily forecast** every morning, the **challenger** every day at 11:30 and **monitoring** every day after 12:00 (see below).
 
 ---
 
@@ -205,10 +205,10 @@ The **tests** badge at the top shows the result of the latest run. Three more wo
 |---|---|
 | **When** | An external timer ([cron-job.org](https://cron-job.org)) starts the forecast at 06:05 and 08:05 Swedish time. GitHub's own schedule runs four more times each morning as a backup, because GitHub can delay or skip scheduled runs. The first forecast made counts; later runs do not change it. |
 | **What** | The workflow downloads the newest prices and a weather forecast, retrains the LSTM at the start of each month, forecasts tomorrow's 24 hours with the LSTM (with an 80% range) and the `weekly_naive` baseline and fills in the real prices of earlier forecasts. |
-| **Where** | The [`forecast-data`](https://github.com/Hossain007Bhuiyan/se3-electricity-forecast/tree/forecast-data) branch: `forecasts.csv` (every forecast hour with its 80% range and the real price), `summary.json` (the live accuracy), `inputs.csv` (the model inputs of every forecast hour), `monitoring.json` (the latest checks) and `availability.csv` (the daily ENTSO-E data check). |
+| **Where** | The [`forecast-data`](https://github.com/Hossain007Bhuiyan/se3-electricity-forecast/tree/forecast-data) branch: `forecasts.csv` (every forecast hour with its 80% range and the real price), `summary.json` (the live accuracy), `inputs.csv` (the model inputs of every forecast hour), `monitoring.json` (the latest checks), `challenger.csv` (the challenger's live test) and `availability.csv` (the ENTSO-E data check from 13 to 29 October 2026). |
 | **Run log** | Every daily run adds one line to `run_log.jsonl` in the forecast-data branch: when it started, what it did, whether the model was retrained, how long it took and the error message if it failed. The dashboard shows the last 14 runs. |
 | **Monitoring** | Every day after 12:00, a second workflow runs four checks: tomorrow's forecast was made before 12:00, the live error of the last 7 counted days stays below a limit in SEK/kWh, the same error divided by the weekly_naive baseline's error stays below a limit and the model inputs are compared with the same month of the test year. Every alert opens a GitHub issue. The limits come from the test year and are fixed in `results/monitoring_reference.json`. The relative check was added in October 2026, after a volatile month showed that the SEK/kWh limit alone cannot tell a harder market from a worse model. The input comparison is shown for information only: a simulation showed that over 14 days it often signals drift that is not there. |
-| **Availability check** | Every day at 11:30, a third workflow records which ENTSO-E data for the next forecast already exists: tomorrow's load forecast, yesterday's production per type, yesterday's cross-border flows and last week's hydro reservoir level. The result is added to `availability.csv` in the forecast-data branch. After two weeks it decides which of these inputs the planned challenger model may use. |
+| **Challenger (live test)** | Every day at 11:30, a third workflow downloads tomorrow's market data from ENTSO-E and Open-Meteo, forecasts tomorrow with the challenger and saves the average of the LSTM and the challenger in `challenger.csv`. If a market input is missing, that day uses the LSTM's forecast. Before this, the same time slot ran a check from 13 to 29 October 2026 that recorded which ENTSO-E data exists before 12:00 (`availability.csv`): every input was normally there, the weekly reservoir level from Thursday. |
 
 ---
 
@@ -306,7 +306,7 @@ se3-electricity-forecast/
 │   ├── adaptive_intervals.py adaptive 80% ranges, compared on the validation year
 │   ├── monitor.py            daily monitoring checks
 │   ├── entsoe.py             ENTSO-E connection and reader
-│   ├── availability.py       daily check of which ENTSO-E data exists before 12:00
+│   ├── availability.py       the ENTSO-E data check (13-29 Oct 2026)
 │   └── entsoe_history.py     ENTSO-E history download
 ├── dashboard/                Streamlit app (app.py, views.py, live_data.py)
 ├── tests/                    main tests
@@ -315,7 +315,7 @@ se3-electricity-forecast/
 ├── results/                  result tables and the MLflow export
 ├── models/                   the trained challenger, frozen during its live test
 ├── figures/                  charts
-└── .github/workflows/        tests, daily forecast, monitoring and availability check
+└── .github/workflows/        tests, daily forecast, challenger and monitoring
 ```
 
 ---
@@ -335,7 +335,7 @@ se3-electricity-forecast/
 
 The next upgrades, in this order. Each one starts after a few weeks of live data, because it needs that history to be evaluated fairly.
 
-1. **Market data and a challenger model (in progress).** A new model with inputs that are published before 12:00: tomorrow's load forecast, yesterday's nuclear, hydro and wind production, hydro reservoir levels and cross-border flows from the ENTSO-E Transparency Platform, plus wind forecasts for Sweden's main wind regions. ENTSO-E's own wind and solar forecasts are published after 12:00, so they are not used. The new model runs next to the LSTM on the live data and replaces it only if it is better over several weeks.
+1. **Market data and a challenger model (in progress).** A new model with inputs that are published before 12:00: tomorrow's load forecast, yesterday's nuclear, hydro and wind production, hydro reservoir levels and cross-border flows from the ENTSO-E Transparency Platform, plus wind forecasts for Sweden's main wind regions. ENTSO-E's own wind and solar forecasts are published after 12:00, so they are not used. The average of the LSTM and the challenger runs next to the LSTM on the live data from 30 October 2026. The rule was fixed before the live test: after at least 28 counted days (forecasts made before 12:00 with known prices, fallback days included), it replaces the LSTM only if its MAE over those days is lower. Otherwise the LSTM stays and the challenger is removed.
 2. **Adaptive prediction intervals (in progress).** Ranges that adjust every day to how often the real price fell outside them. The current ranges are slightly too narrow on the test year (77% instead of 80%) and much too narrow in volatile weeks. Eight versions were compared on the validation year and the chosen one (adaptive conformal prediction with step size 0.05) kept the monthly coverage closest to 80% (`results/intervals_adaptive_validation.csv`). It now runs next to the current ranges on the live data and replaces them only if it is better over several weeks.
 3. **LLM assistant with tools.** An assistant that answers questions about the forecast, explains price movements with the SHAP values and writes daily summaries. It gets every number from the forecast data through tools and never makes numbers up.
 

@@ -1,27 +1,26 @@
-# Every day before the 12:00 deadline: record which ENTSO-E data for the next forecast already
-# exists and add the result to availability.csv in the forecast-data branch. After two weeks this
-# file decides which market data the challenger model may use.
-name: availability check
+# Every day before the 12:00 deadline: forecast tomorrow with the challenger and save the average of
+# the LSTM and the challenger in challenger.csv in the forecast-data branch (the live test, Step 15D).
+# It runs after the daily forecast, because it needs the LSTM's forecast for tomorrow.
+name: challenger
 
 on:
   schedule:
     # cron-job.org starts this workflow at 11:30 Swedish time. This GitHub schedule is a backup:
-    # 09:45 UTC = 11:45 Swedish summer time (10:45 in winter). GitHub can start it late. Every
-    # row saves the real time of the check, so a check after 12:00 is never counted as on time.
-    - cron: "45 9 * * *"
+    # 10:50 UTC = 11:50 Swedish winter time (12:50 in summer). A forecast made after 12:00 is saved
+    # but never counted. The first forecast for each hour is never replaced.
+    - cron: "50 10 * * *"
   workflow_dispatch:  # lets cron-job.org (and the "Run workflow" button) start it
 
 permissions:
-  contents: write  # to save availability.csv in the forecast-data branch
+  contents: write  # to save challenger.csv in the forecast-data branch
 
-# The same group as the daily forecast and the monitoring, so they never write to the
-# forecast-data branch at once
+# The same group as the other workflows, so they never write to the forecast-data branch at once
 concurrency:
   group: daily-forecast
   cancel-in-progress: false
 
 jobs:
-  check:
+  forecast:
     runs-on: ubuntu-latest
     timeout-minutes: 20
 
@@ -43,20 +42,20 @@ jobs:
         run: uv sync --locked
 
       # The token comes from the repository secret and is only given to this one step
-      - name: Run the availability check
+      - name: Forecast tomorrow with the challenger
         env:
           ENTSOE_TOKEN: ${{ secrets.ENTSOE_TOKEN }}
-        run: uv run python -m se3_electricity_forecast.availability live/availability.csv
+        run: uv run python -m se3_electricity_forecast.challenger_live
 
-      - name: Save the result in the forecast-data branch
+      - name: Save the forecast in the forecast-data branch
         run: |
           cd live
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add availability.csv
+          git add challenger.csv
           if git diff --cached --quiet; then
             echo "nothing new to save"
           else
-            git commit -m "Availability check $(date -u '+%Y-%m-%d %H:%M') UTC"
+            git commit -m "Challenger run $(date -u '+%Y-%m-%d %H:%M') UTC"
             git push origin forecast-data
           fi
