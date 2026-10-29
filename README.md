@@ -297,6 +297,7 @@ se3-electricity-forecast/
 │   ├── baselines.py          four simple rules
 │   ├── train_lgbm.py         LightGBM, monthly walk-forward
 │   ├── challenger.py         the challenger: LightGBM with market inputs
+│   ├── challenger_live.py    the challenger in live use, next to the LSTM
 │   ├── final_test.py         final evaluation on the test year
 │   ├── explain.py            SHAP values and permutation importance
 │   ├── tracking.py           MLflow tracking and export
@@ -312,6 +313,7 @@ se3-electricity-forecast/
 ├── tests_torch/              PyTorch tests
 ├── notebooks/                data exploration
 ├── results/                  result tables and the MLflow export
+├── models/                   the trained challenger, frozen during its live test
 ├── figures/                  charts
 └── .github/workflows/        tests, daily forecast, monitoring and availability check
 ```
