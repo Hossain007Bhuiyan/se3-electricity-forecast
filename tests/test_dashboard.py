@@ -156,6 +156,11 @@ def fake_downloads(record, monkeypatch):
                             "error": [None, "ConnectionError: price API not reachable"]})
     run_log["started"] = pd.to_datetime(run_log["started_utc"], utc=True).dt.tz_convert(TZ)
     monkeypatch.setattr(live_data, "load_run_log", lambda: run_log)
+    # The challenger's live test for the first (counted) day
+    first = record[record["issued_before_noon"]]
+    challenger = pd.DataFrame({"time_utc": first["time_utc"], "combined": first["actual"] + 0.05,
+                               "combined_before_noon": True, "fallback": False})
+    monkeypatch.setattr(live_data, "load_challenger", lambda: challenger)
     st.cache_data.clear()  # no cached data from an earlier test
 
 
@@ -256,6 +261,24 @@ def test_adaptive_range_coverage_is_counted_on_its_own(record):
     assert live_data.range_coverage(both) == (24, 1.0)  # the current range is not affected
     current, adaptive = live_data.range_widths(both)
     assert np.isclose(current, 0.1) and np.isclose(adaptive, 0.09)  # widths over the same counted hours
+
+def test_challenger_comparison_counts_only_hours_made_before_noon(record, tmp_path):
+    rows = make_record()
+    saved = pd.DataFrame({"time_utc": rows["time_utc"], "time_local": rows["time_local"], "lstm": rows["lstm"],
+                          "issued_at_utc": "2026-10-02 10:30:00+00:00", "issued_before_noon": [True] * 36 + [False] * 12,
+                          "challenger": 0.0, "note": "", "fallback": False, "combined": rows["actual"] + 0.05})
+    path = tmp_path / "challenger.csv"
+    saved.to_csv(path, index=False)
+    both = live_data.add_challenger(record, live_data.load_challenger(path))
+    result = live_data.challenger_comparison(both)
+    # Only the first day counts: the LSTM's second day was made after 12:00
+    assert result["days"] == 1 and result["hours"] == 24
+    assert np.isclose(result["lstm_mae"], 0.1) and np.isclose(result["combined_mae"], 0.05)
+    assert live_data.challenger_comparison(record) is None  # no challenger file yet
+    names = [trace.name for trace in views.day_chart(both[both["time_local"].dt.day == 3]).data]
+    assert "LSTM + challenger (test)" in names
+    assert "LSTM + challenger (test)" not in [trace.name for trace in views.day_chart(record).data]
+
 
 def test_trend_chart_shows_one_label_per_day():
     errors = pd.DataFrame({"day": pd.date_range("2026-10-05", periods=8).date, "hours": 24,

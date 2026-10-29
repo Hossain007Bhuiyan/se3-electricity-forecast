@@ -17,6 +17,7 @@ MLFLOW_RUNS_URL = f"{RAW}/main/results/mlflow_runs.csv"           # exported fro
 MLFLOW_MONTHLY_URL = f"{RAW}/main/results/mlflow_monthly_mae.csv"
 MONITORING_URL = f"{RAW}/forecast-data/monitoring.json"  # written every day by the monitoring workflow
 RUN_LOG_URL = f"{RAW}/forecast-data/run_log.jsonl"        # one line per daily forecast run
+CHALLENGER_URL = f"{RAW}/forecast-data/challenger.csv"    # the challenger's live test, written every day at 11:30
 REPO_URL = f"https://github.com/{REPO}"
 PRICE_API = "https://www.elprisetjustnu.se/api/v1/prices/{year}/{month:02d}-{day:02d}_SE3.json"
 
@@ -44,6 +45,33 @@ def load_record(url=FORECASTS_URL):
 
 def load_test_results(url=TEST_RESULTS_URL):
     return read_csv(url)
+
+# The challenger's live test: the average of the LSTM and the challenger for every
+# forecast hour, when it was made and whether that day fell back to the LSTM
+def load_challenger(url=CHALLENGER_URL):
+    challenger = read_csv(url)
+    challenger["time_utc"] = pd.to_datetime(challenger["time_utc"], utc=True)
+    challenger["combined_before_noon"] = challenger["issued_before_noon"].astype(str) == "True"
+    challenger["fallback"] = challenger["fallback"].astype(str) == "True"
+    return challenger[["time_utc", "combined", "combined_before_noon", "fallback"]]
+
+
+# Adds the challenger's columns to the record, matched by hour. Hours without one stay empty.
+def add_challenger(record, challenger):
+    return record.merge(challenger, on="time_utc", how="left")
+
+
+# The live comparison by the rule in the README: only hours where both forecasts were made before
+# 12:00 and the real price is known. None while there is no such hour.
+def challenger_comparison(record):
+    if "combined" not in record:
+        return None
+    done = record[record["actual"].notna() & record["issued_before_noon"] & record["combined_before_noon"].eq(True)]
+    if done.empty:
+        return None
+    return {"days": int(done["time_local"].dt.date.nunique()), "hours": int(len(done)),
+            "lstm_mae": float((done["actual"] - done["lstm"]).abs().mean()),
+            "combined_mae": float((done["actual"] - done["combined"]).abs().mean())}
 
 
 # The MLflow runs, as exported by "uv run python -m se3_electricity_forecast.tracking"

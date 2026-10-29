@@ -27,7 +27,7 @@ Every day, the electricity prices for the next day are set in an auction that cl
 - **Result:** on a full year of unseen test data (October 2025 to September 2026), the LSTM's average error is **34% lower** than the best simple baseline and it beat LightGBM in **11 of 12 months**.
 - **Explainability:** SHAP values and permutation importance show what drives each model's forecasts.
 - **Live system:** the forecast runs every morning; every forecast is saved and later compared with the real prices.
-- **Engineering:** experiment tracking with MLflow, 117 automated tests, continuous integration with GitHub Actions, daily monitoring with alerts and a public dashboard.
+- **Engineering:** experiment tracking with MLflow, 124 automated tests, continuous integration with GitHub Actions, daily monitoring with alerts and a public dashboard.
 
 ---
 
@@ -187,7 +187,7 @@ SHAP values show how a model uses its inputs, not proven causes. Inputs that car
 <img width="1297" height="838" alt="MLflow: all tracked runs" src="https://github.com/user-attachments/assets/10ac7720-df67-45e3-b9f1-f0ed8bbfeed8" />
 <img width="1745" height="1078" alt="MLflow: comparison of runs" src="https://github.com/user-attachments/assets/ecdd50b8-917b-4859-8aeb-07b6577d0a1c" />
 
-**Tests.** 117 automated tests (pytest: 102 main tests and 15 PyTorch tests) check that no feature uses future information, the monitoring checks, the time-based split, the clock changes, Swedish holidays, the weather forecasts, the ENTSO-E market data, the adaptive ranges, MLflow tracking, repeatable model training, the daily forecast program and every page of the dashboard. They use small synthetic data, so no downloaded data is needed.
+**Tests.** 124 automated tests (pytest: 109 main tests and 15 PyTorch tests) check that no feature uses future information, the monitoring checks, the time-based split, the clock changes, Swedish holidays, the weather forecasts, the ENTSO-E market data, the adaptive ranges, the live challenger, MLflow tracking, repeatable model training, the daily forecast program and every page of the dashboard. They use small synthetic data, so no downloaded data is needed.
 
 **Continuous integration (CI).** On every push to `main` and on every pull request, [GitHub Actions](https://github.com/Hossain007Bhuiyan/se3-electricity-forecast/actions/workflows/tests.yml) runs the whole test suite on a clean Linux machine:
 

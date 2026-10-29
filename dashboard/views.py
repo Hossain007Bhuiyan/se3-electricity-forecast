@@ -65,6 +65,19 @@ def get_monitoring():
 def get_run_log():
     return live_data.load_run_log()
 
+@st.cache_data(ttl=600)
+def get_challenger():
+    return live_data.load_challenger()
+
+
+# The record with the challenger's live test added. The test is optional: if its file cannot be
+# loaded (before its first run or on a network problem), the page shows the LSTM as before.
+def with_challenger(record):
+    try:
+        return live_data.add_challenger(record, get_challenger())
+    except Exception:
+        return record
+
 @st.cache_data(ttl=3600)
 def get_recent_prices():
     return live_data.fetch_recent_prices(days=30)
@@ -106,6 +119,9 @@ def day_chart(rows, height=430):
     fig.add_trace(go.Scatter(x=rows["time_local"], y=rows["lstm"], name="LSTM forecast", mode="lines",
                              line=dict(color=CYAN, width=3, shape="spline"),
                              fill="tozeroy", fillcolor="rgba(34,211,238,.10)"))
+    if "combined" in rows and rows["combined"].notna().any():
+        fig.add_trace(go.Scatter(x=rows["time_local"], y=rows["combined"], name="LSTM + challenger (test)",
+                                 mode="lines", line=dict(color=PINK, width=2, dash="dash", shape="spline")))
     fig.add_trace(go.Scatter(x=rows["time_local"], y=rows["weekly_naive"], name="Baseline (weekly_naive)",
                              mode="lines", line=dict(color=VIOLET, width=2, dash="dot", shape="spline")))
     if rows["actual"].notna().any():
@@ -192,6 +208,7 @@ def show_problem(message, error):
 # Tomorrow's forecast: the key numbers and the 24 hourly prices
 def tomorrow_page():
     record, _ = load_record()
+    record = with_challenger(record)
     day, rows = live_data.latest_day(record)
     overview = live_data.day_overview(rows)
     errors = live_data.daily_errors(record)
@@ -219,11 +236,18 @@ def tomorrow_page():
                    "It is based on the LSTM's past errors and was checked on the test year (77% of hours inside).")
 
 
+
+    if "combined" in rows and rows["combined"].notna().any():
+        st.caption("The dashed pink line is a live test: the average of the LSTM and the challenger (LightGBM with "
+                   "market data). It replaces the LSTM only if it is better after at least 28 counted days.")
+
+
 # Live accuracy: the overall live error, its development over time, the last 30 counted days,
 # and any earlier day in detail. Only the last 30 days are shown as bars, so the page stays
 # readable when the record grows; the lines show the trend without the noise of single days.
 def live_accuracy_page():
     record, _ = load_record()
+    record = with_challenger(record)
     errors = live_data.daily_errors(record)
     section("Live accuracy", "Forecast vs. reality",
             "Only forecasts made before 12:00 Swedish time on the day before count, so every number here "
@@ -252,6 +276,13 @@ def live_accuracy_page():
                               f"test run, {adaptive[0]} counted hours, average width {widths[1]:.2f} SEK/kWh "
                               f"(current range {widths[0]:.2f} on the same hours)")
             st.markdown('<div class="cards">' + cards + '</div>', unsafe_allow_html=True)
+        comparison = live_data.challenger_comparison(record)
+        if comparison is not None:
+            st.markdown('<div class="cards">'
+                        + card("LSTM + challenger (test)", f"{comparison['combined_mae']:.3f}", "SEK/kWh",
+                               f"{comparison['days']} counted days, LSTM {comparison['lstm_mae']:.3f} on the same hours. "
+                               f"Decided after 28 days")
+                        + '</div>', unsafe_allow_html=True)
 
         week = live_data.rolling_errors(errors, 7)
         if week.empty:
