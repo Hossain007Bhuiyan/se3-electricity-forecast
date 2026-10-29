@@ -1,10 +1,10 @@
 {
-  "checked_at_utc": "2026-10-29T00:32:18.799679+00:00",
+  "checked_at_utc": "2026-10-29T11:40:54.904244+00:00",
   "checks": {
     "deadline": {
-      "status": "waiting",
+      "status": "ok",
       "day": "2026-10-30",
-      "message": "The forecast for 2026-10-30 has not been made yet. It is still before 12:00."
+      "message": "The forecast for 2026-10-30 was made at 06:05, before 12:00."
     },
     "error": {
       "status": "ok",
@@ -27,19 +27,19 @@
       "month": 10,
       "limit": 0.25,
       "psi": {
-        "price_lag_24h": 0.052077604703227934,
-        "price_lag_48h": 0.05086512748121279,
-        "price_lag_168h": 0.5642793358469931,
-        "prev_day_mean": 0.8310793677026609,
-        "prev_day_min": 2.241604484985395,
-        "prev_day_max": 4.536738504725587,
-        "prev_day_std": 2.5402809321097686,
-        "prev_7d_mean": 4.864162254406923,
-        "temperature_2m": 0.47989619932048483,
-        "wind_speed_10m": 0.5623887070943177,
+        "price_lag_24h": 0.11029963382758567,
+        "price_lag_48h": 0.05694817006998371,
+        "price_lag_168h": 0.6134806533297512,
+        "prev_day_mean": 0.7975296604562638,
+        "prev_day_min": 2.273121571662803,
+        "prev_day_max": 3.7008827292849045,
+        "prev_day_std": 2.6651617460324935,
+        "prev_7d_mean": 4.198321328378792,
+        "temperature_2m": 0.3248668098290819,
+        "wind_speed_10m": 0.6032464430382487,
         "precipitation": 0.011144406568558848,
-        "cloud_cover": 0.12803157097489798,
-        "shortwave_radiation": 0.18142380314113082
+        "cloud_cover": 0.09272675829403194,
+        "shortwave_radiation": 0.14458840903318287
       },
       "drifted": [
         "prev_7d_mean",
