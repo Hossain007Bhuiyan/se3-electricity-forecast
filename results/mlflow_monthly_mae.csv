@@ -179,3 +179,39 @@ lstm,test,2026-06,0.2141841103230269
 lstm,test,2026-07,0.1905113334608874
 lstm,test,2026-08,0.2229473778089056
 lstm,test,2026-09,0.3003998050012881
+challenger_l1,validation,2024-10,0.1135878433511711
+challenger_l1,validation,2024-11,0.2374171505622102
+challenger_l1,validation,2024-12,0.2628737079292359
+challenger_l1,validation,2025-01,0.272125780495925
+challenger_l1,validation,2025-02,0.2468410345556892
+challenger_l1,validation,2025-03,0.2264665066810745
+challenger_l1,validation,2025-04,0.1648202656018368
+challenger_l1,validation,2025-05,0.183718014866953
+challenger_l1,validation,2025-06,0.114275280311735
+challenger_l1,validation,2025-07,0.1564025597018909
+challenger_l1,validation,2025-08,0.1631381255003112
+challenger_l1,validation,2025-09,0.2306424546232022
+challenger_l2,validation,2024-10,0.1292255760680846
+challenger_l2,validation,2024-11,0.2200254685401518
+challenger_l2,validation,2024-12,0.2959730179317733
+challenger_l2,validation,2025-01,0.2843761927260786
+challenger_l2,validation,2025-02,0.2418790414758114
+challenger_l2,validation,2025-03,0.2050626091472068
+challenger_l2,validation,2025-04,0.1739810466447991
+challenger_l2,validation,2025-05,0.1684005347375817
+challenger_l2,validation,2025-06,0.1153245882783232
+challenger_l2,validation,2025-07,0.1578772852993777
+challenger_l2,validation,2025-08,0.1417486599068391
+challenger_l2,validation,2025-09,0.2169881266678019
+lstm + challenger_l2,validation,2024-10,0.1151043941855478
+lstm + challenger_l2,validation,2024-11,0.2070061627168861
+lstm + challenger_l2,validation,2024-12,0.24932577023938
+lstm + challenger_l2,validation,2025-01,0.2407345773565248
+lstm + challenger_l2,validation,2025-02,0.2326782106073885
+lstm + challenger_l2,validation,2025-03,0.2118743199270123
+lstm + challenger_l2,validation,2025-04,0.1721054735101338
+lstm + challenger_l2,validation,2025-05,0.1656913471857589
+lstm + challenger_l2,validation,2025-06,0.1193386619133347
+lstm + challenger_l2,validation,2025-07,0.1489879275795667
+lstm + challenger_l2,validation,2025-08,0.1304314406706041
+lstm + challenger_l2,validation,2025-09,0.2066545930155285
