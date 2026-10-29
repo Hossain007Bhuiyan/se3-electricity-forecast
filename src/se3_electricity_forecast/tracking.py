@@ -68,7 +68,7 @@ def start_run(run_name, stage, model, params, data):
     commit, uncommitted = git_state()
     mlflow.set_tags({
         "stage": stage,                      # "validation" or "test"
-        "model": model,                      # "baseline", "lightgbm" or "lstm"
+        "model": model,                      # "baseline", "lightgbm", "lstm", "lightgbm_market" or "average"
         "git_commit": commit,
         "uncommitted_changes": uncommitted,  # "True" means the code differed from the commit
     })

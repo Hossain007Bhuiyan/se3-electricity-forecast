@@ -43,3 +43,10 @@ def test_average_matches_hours_and_summary_compares_with_the_baseline():
     table = challenger.summary({"a": a, "both": both}, naive_mae=2.0).set_index("model")
     assert np.isclose(table.loc["a", "mae"], 2 / 3) and np.isclose(table.loc["a", "rel_mae"], 1 / 3)
     assert np.isclose(table.loc["both", "mae"], 1.0)
+
+
+def test_mlflow_params_describe_the_challenger():
+    config = next(c for c in challenger.CONFIGS if c["name"] == "challenger_l2")
+    params = challenger.mlflow_params(config)
+    assert params["objective"] == "l2" and params["features"].split(",") == FEATURE_COLS + MARKET_COLS
+    assert params["period_start"] == "2024-10-01" and params["period_end"] == "2025-10-01"

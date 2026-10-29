@@ -182,7 +182,7 @@ SHAP values show how a model uses its inputs, not proven causes. Inputs that car
 
 ## 🧪 Experiment Tracking, Tests and CI
 
-**MLflow.** All 15 runs (the baselines, four LightGBM versions and the LSTM on the validation year; the baselines, LightGBM and the LSTM on the test year) are tracked with their settings, results, monthly errors, hourly predictions, Git commit and data fingerprint. The MLflow database is stored locally; an export of all runs is in [`results/mlflow_runs.csv`](results/mlflow_runs.csv) and on the dashboard's **Experiment tracking** page.
+**MLflow.** All 18 runs (the baselines, four LightGBM versions, the LSTM, two challenger versions with market data and the average of the LSTM and the better challenger on the validation year; the baselines, LightGBM and the LSTM on the test year) are tracked with their settings, results, monthly errors, hourly predictions, Git commit and data fingerprint. The MLflow database is stored locally; an export of all runs is in [`results/mlflow_runs.csv`](results/mlflow_runs.csv) and on the dashboard's **Experiment tracking** page.
 
 <img width="1297" height="838" alt="MLflow: all tracked runs" src="https://github.com/user-attachments/assets/10ac7720-df67-45e3-b9f1-f0ed8bbfeed8" />
 <img width="1745" height="1078" alt="MLflow: comparison of runs" src="https://github.com/user-attachments/assets/ecdd50b8-917b-4859-8aeb-07b6577d0a1c" />
