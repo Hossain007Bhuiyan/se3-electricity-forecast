@@ -296,6 +296,7 @@ se3-electricity-forecast/
 │   ├── evaluate.py           time-based split and error measures
 │   ├── baselines.py          four simple rules
 │   ├── train_lgbm.py         LightGBM, monthly walk-forward
+│   ├── train_lstm.py         LSTM, monthly walk-forward
 │   ├── challenger.py         the challenger: LightGBM with market inputs
 │   ├── challenger_live.py    the challenger in live use, next to the LSTM
 │   ├── final_test.py         final evaluation on the test year
