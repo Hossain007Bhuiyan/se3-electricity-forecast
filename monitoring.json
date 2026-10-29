@@ -1,5 +1,5 @@
 {
-  "checked_at_utc": "2026-10-29T11:40:54.904244+00:00",
+  "checked_at_utc": "2026-10-29T17:04:08.996729+00:00",
   "checks": {
     "deadline": {
       "status": "ok",
@@ -8,18 +8,18 @@
     },
     "error": {
       "status": "ok",
-      "days": 25,
-      "lstm_mae": 0.23472454126744877,
-      "weekly_naive_mae": 0.6308222928994083,
+      "days": 26,
+      "lstm_mae": 0.2885950707887559,
+      "weekly_naive_mae": 0.6159995414201184,
       "limit": 0.3194472476255649,
-      "message": "LSTM MAE of the last 7 counted days: 0.235 SEK/kWh, within the limit of 0.319 (baseline: 0.631)."
+      "message": "LSTM MAE of the last 7 counted days: 0.289 SEK/kWh, within the limit of 0.319 (baseline: 0.616)."
     },
     "relative": {
       "status": "ok",
-      "days": 25,
-      "ratio": 0.37209297120524915,
+      "days": 26,
+      "ratio": 0.46849884031314715,
       "limit": 0.9598187730076034,
-      "message": "LSTM error of the last 7 counted days: 0.37 times the baseline's error, within the limit of 0.96."
+      "message": "LSTM error of the last 7 counted days: 0.47 times the baseline's error, within the limit of 0.96."
     },
     "drift": {
       "status": "info",
