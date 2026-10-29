@@ -1,6 +1,8 @@
 {
  "error_limit": 0.3194472476255649,
  "error_median": 0.198319350156311,
+ "relative_limit": 0.9598187730076034,
+ "relative_median": 0.6854979363419019,
  "psi_limit": 0.25,
  "test_period": [
   "2025-10-01",

@@ -145,7 +145,9 @@ def fake_downloads(record, monkeypatch):
     monitoring = {"checked_at_utc": "2026-10-03T10:37:00+00:00", "alerts": [], "checks": {
         "deadline": {"status": "ok", "day": "2026-10-04", "message": "The forecast for 2026-10-04 was made at 06:05, before 12:00."},
         "error": {"status": "waiting", "days": 1, "message": "1 of 7 counted days so far."},
-        "drift": {"status": "ok", "days": 7, "month": 10, "limit": 0.25, "drifted": [], "message": "All inputs look normal.",
+        "relative": {"status": "waiting", "days": 1, "message": "1 of 7 counted days so far."},
+        "drift": {"status": "info", "days": 7, "month": 10, "limit": 0.25, "drifted": ["temperature_2m"],
+                  "message": "For information: these inputs differ from the same month in the test year: temperature_2m.",
                   "psi": {"price_lag_24h": 0.05, "temperature_2m": 0.12}}}}
     monkeypatch.setattr(live_data, "load_monitoring", lambda: monitoring)
     run_log = pd.DataFrame({"started_utc": ["2026-10-03T04:05:00+00:00", "2026-10-02T04:05:00+00:00"],

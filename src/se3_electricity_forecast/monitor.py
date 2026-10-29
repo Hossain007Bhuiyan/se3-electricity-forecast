@@ -1,15 +1,20 @@
-# Monitoring of the live forecasts. Three checks run every day after 12:00 Swedish time:
+# Monitoring of the live forecasts. Four checks run every day after 12:00 Swedish time:
 #   1. deadline: tomorrow's forecast was made before 12:00, when bids for the day-ahead market close
 #   2. error: the live error of the last 7 counted days is not above a fixed limit
-#   3. drift: the model inputs of the last 14 days look like the inputs of the same month in the
-#      test year (prices and weather can change so much that the model no longer fits them)
+#   3. relative: the same error divided by the weekly_naive baseline's error is not above a fixed
+#      limit. A volatile market makes every forecast worse, so only this check tells a harder
+#      market apart from a model that lost its lead over the baseline (added in October 2026).
+#   4. drift: the model inputs of the last 14 days compared with the same month in the test year.
+#      For information only, never an alert: a simulation showed that over 14 days the population
+#      stability index often goes above 0.25 without any real drift, because prices and weather
+#      change slowly and the daily inputs have only one value per day (October 2026).
 #
 # The limits come from the test year and are saved once in results/monitoring_reference.json, so
 # they are fixed in advance and cannot be changed later to hide a bad result. Make that file with:
 #     uv run python -m se3_electricity_forecast.monitor reference
 # The daily check (writes live/monitoring.json):
 #     uv run python -m se3_electricity_forecast.monitor
-# Only pandas and NumPy are used here, no model library.
+# The daily check only uses pandas and NumPy, no model library.
 
 import json
 import logging
@@ -42,10 +47,11 @@ PSI_LIMIT = 0.25        # a population stability index above 0.25 is a common si
 # The calendar inputs follow the clock, so only prices and weather can drift
 DRIFT_COLS = [c for c in FEATURE_COLS if c not in ("hour", "weekday", "month", "is_weekend", "is_holiday")]
 
+# Drift is not here: it is shown for information only and never opens an issue
 TITLES = {
     "deadline": "Monitoring alert: deadline missed",
     "error": "Monitoring alert: live error above limit",
-    "drift": "Monitoring alert: input drift",
+    "relative": "Monitoring alert: live error relative to the baseline above limit",
 }
 
 
@@ -87,14 +93,21 @@ def psi(values, edges, reference_shares):
     return float(np.sum((live - ref) * np.log(live / ref)))
 
 
-# Builds the fixed limits from the test year: the error limit from the LSTM's test predictions,
-# and for every month and input the bin edges (deciles) and the share of hours in each bin.
+# Builds the fixed limits from the test year: the error limits (in SEK/kWh and relative to the
+# weekly_naive baseline) from the LSTM's test predictions. For every month and input: the bin
+# edges (deciles) and the share of hours in each bin.
 # The inputs are the ones with archived weather forecasts, like the live inputs.
 def make_reference(features, predictions):
     preds = predictions.copy()
     preds["time_local"] = preds["time_utc"].dt.tz_convert(TZ)
     per_day = daily_errors(preds["time_local"], preds["actual"], preds["prediction"])
     windows = rolling_mae(per_day, ERROR_DAYS)
+    # The weekly_naive baseline for the same hours, made exactly like in baselines.py (imported here
+    # only, so the daily check itself stays free of the MLflow import that baselines.py needs)
+    from se3_electricity_forecast.baselines import baseline_predictions
+    naive = pd.Series(baseline_predictions(features)["weekly_naive"], index=features["time_utc"].to_numpy())
+    per_day_naive = daily_errors(preds["time_local"], preds["actual"], preds["time_utc"].map(naive))
+    relative = windows / rolling_mae(per_day_naive, ERROR_DAYS)
 
     test = features[(features["time_local"] >= TEST_START) & (features["time_local"] < TEST_END)]
     months = {}
@@ -107,6 +120,8 @@ def make_reference(features, predictions):
     return {
         "error_limit": float(windows.quantile(ERROR_QUANTILE)),
         "error_median": float(windows.median()),
+        "relative_limit": float(relative.quantile(ERROR_QUANTILE)),
+        "relative_median": float(relative.median()),
         "psi_limit": PSI_LIMIT,
         "test_period": [str(TEST_START.date()), str((TEST_END - pd.Timedelta(days=1)).date())],
         "months": months,
@@ -144,6 +159,18 @@ def check_error(record, limit):
                        f"{limit:.3f} (baseline: {naive_mae:.3f})."}
 
 
+# Uses the 7-day errors of check_error, so both checks always look at exactly the same days
+def check_relative(error, limit):
+    if error["status"] == "waiting":
+        return {"status": "waiting", "days": error["days"], "message": error["message"]}
+    ratio = error["lstm_mae"] / error["weekly_naive_mae"]
+    status = "alert" if ratio > limit else "ok"
+    word = "above" if status == "alert" else "within"
+    return {"status": status, "days": error["days"], "ratio": ratio, "limit": limit,
+            "message": f"LSTM error of the last {ERROR_DAYS} counted days: {ratio:.2f} times the baseline's error, "
+                       f"{word} the limit of {limit:.2f}."}
+
+
 def check_drift(inputs, reference):
     days = sorted(inputs["time_local"].dt.date.unique()) if inputs is not None else []
     if len(days) < MIN_DRIFT_DAYS:
@@ -155,18 +182,20 @@ def check_drift(inputs, reference):
     values = {col: psi(recent[col].to_numpy(float), reference["months"][month][col]["edges"],
                        reference["months"][month][col]["shares"]) for col in DRIFT_COLS}
     drifted = [col for col, value in sorted(values.items(), key=lambda kv: -kv[1]) if value > reference["psi_limit"]]
-    status = "alert" if drifted else "ok"
-    message = (f"These inputs differ from the same month in the test year: {', '.join(drifted)}." if drifted
+    status = "info" if drifted else "ok"
+    message = (f"For information: these inputs differ from the same month in the test year: {', '.join(drifted)}." if drifted
                else "All inputs look like the same month in the test year.")
     return {"status": status, "days": len(recent_days), "month": int(month), "limit": reference["psi_limit"],
             "psi": values, "drifted": drifted, "message": message}
 
 
-# Runs the three checks and lists an alert (issue title and text) for every check that failed
+# Runs the four checks and lists an alert (issue title and text) for every check that failed
 def run_checks(record, inputs, reference, now):
+    error = check_error(record, reference["error_limit"])
     checks = {
         "deadline": check_deadline(record, now),
-        "error": check_error(record, reference["error_limit"]),
+        "error": error,
+        "relative": check_relative(error, reference["relative_limit"]),
         "drift": check_drift(inputs, reference),
     }
     alerts = [{"title": TITLES[name], "body": f"{check['message']}\n\nChecked at {now:%Y-%m-%d %H:%M} UTC."}
@@ -179,7 +208,8 @@ def main():
         reference = make_reference(pd.read_parquet(FORECAST_FEATURES), pd.read_parquet(LSTM_PREDICTIONS))
         REFERENCE.write_text(json.dumps(reference, indent=1) + "\n")
         log.info(f"saved {REFERENCE.relative_to(ROOT)}: 7-day error limit {reference['error_limit']:.4f} "
-                 f"(median {reference['error_median']:.4f}), {len(reference['months'])} months of input bins")
+                 f"(median {reference['error_median']:.4f}), relative limit {reference['relative_limit']:.4f} "
+                 f"(median {reference['relative_median']:.4f}), {len(reference['months'])} months of input bins")
         return
     status = run_checks(read_live_csv(RECORD), read_live_csv(INPUTS), json.loads(REFERENCE.read_text()),
                         pd.Timestamp.now(tz="UTC"))

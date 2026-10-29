@@ -20,15 +20,16 @@ def hours(start, end):
     return time_utc, time_utc.tz_convert(TZ)
 
 
-# Test-year inputs and LSTM predictions with random but realistic values
+# Test-year inputs and LSTM predictions with random but realistic values. The prices have the same
+# spread as the price inputs, so the weekly_naive baseline (made from those inputs) is a fair rule.
 @pytest.fixture
 def reference():
     rng = np.random.default_rng(1)
     time_utc, time_local = hours(TEST_START, TEST_END)
-    features = pd.DataFrame({"time_utc": time_utc, "time_local": time_local})
+    features = pd.DataFrame({"time_utc": time_utc, "time_local": time_local, "weekday": time_local.day_of_week})
     for col in monitor.DRIFT_COLS:
         features[col] = rng.normal(10, 2, len(time_utc))
-    actual = rng.normal(1, 0.3, len(time_utc))
+    actual = rng.normal(10, 2, len(time_utc))
     predictions = pd.DataFrame({"time_utc": time_utc, "actual": actual, "prediction": actual + rng.normal(0, 0.2, len(time_utc))})
     return monitor.make_reference(features, predictions)
 
@@ -64,6 +65,7 @@ def test_psi_is_zero_for_the_same_distribution_and_large_for_a_shift():
 def test_reference_error_limit_and_month_bins(reference):
     assert sorted(int(m) for m in reference["months"]) == list(range(1, 13))
     assert reference["error_median"] < reference["error_limit"]
+    assert reference["relative_median"] < reference["relative_limit"] < 1  # the LSTM beats the baseline
     bins = reference["months"]["10"]["temperature_2m"]
     assert len(bins["shares"]) == len(bins["edges"]) + 1 and np.isclose(sum(bins["shares"]), 1)
 
@@ -94,7 +96,23 @@ def test_drift_check(reference):
     same = monitor.check_drift(make_inputs(14), reference)
     assert same["status"] == "ok" and same["month"] == 10 and set(same["psi"]) == set(monitor.DRIFT_COLS)
     shifted = monitor.check_drift(make_inputs(14, shift=6), reference)
-    assert shifted["status"] == "alert" and set(shifted["drifted"]) == set(monitor.DRIFT_COLS)
+    # Drift is shown for information only, never as an alert
+    assert shifted["status"] == "info" and set(shifted["drifted"]) == set(monitor.DRIFT_COLS)
+
+
+def test_relative_check_tells_a_harder_market_from_a_worse_model(reference):
+    # A volatile market: the LSTM error is above the SEK limit while it is still far below the baseline's
+    harder = make_record(10, error=0.5)
+    harder["weekly_naive"] = harder["actual"] + 10.0
+    error = monitor.check_error(harder, reference["error_limit"])
+    assert error["status"] == "alert"
+    assert monitor.check_relative(error, reference["relative_limit"])["status"] == "ok"
+    # A worse model: the LSTM error (0.5) is above the baseline's (0.3), so the relative check alerts
+    worse = monitor.check_relative(monitor.check_error(make_record(10, error=0.5), reference["error_limit"]),
+                                   reference["relative_limit"])
+    assert worse["status"] == "alert" and np.isclose(worse["ratio"], 0.5 / 0.3)
+    waiting = monitor.check_error(make_record(5), reference["error_limit"])
+    assert monitor.check_relative(waiting, reference["relative_limit"])["status"] == "waiting"
 
 
 def test_every_failed_check_becomes_one_alert(reference):

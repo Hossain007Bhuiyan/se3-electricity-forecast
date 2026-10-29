@@ -284,18 +284,22 @@ def live_accuracy_page():
 # The latest monitoring run: deadline, live error and input drift
 def monitoring_page():
     section("Monitoring", "Automatic daily checks",
-            "Every day after 12:00 Swedish time, three checks run on the live forecasts. Every alert opens an "
-            "issue on GitHub. The limits come from the test year and were fixed before the checks started.")
+            "Every day after 12:00 Swedish time, four checks run on the live forecasts. Every alert opens an "
+            "issue on GitHub. The limits come from the test year and were fixed before the checks started. "
+            "Input drift is shown for information only, because over 14 days it often signals drift that is not there.")
     try:
         status = get_monitoring()
     except Exception as error:
         show_problem("The monitoring result could not be loaded from GitHub right now.", error)
         return
-    labels = {"ok": "OK", "alert": "Alert", "waiting": "Waiting"}
-    names = {"deadline": "Forecast before 12:00", "error": "Live error", "drift": "Input drift"}
+    labels = {"ok": "OK", "alert": "Alert", "waiting": "Waiting", "info": "Info"}
+    names = {"deadline": "Forecast before 12:00", "error": "Live error", "relative": "Error vs baseline",
+             "drift": "Input drift"}
     checks = status["checks"]
+    # .get keeps the page working if the monitoring file has a check or status this page does not know yet
     st.markdown('<div class="cards">'
-                + "".join(card(names[name], labels[check["status"]], "", check["message"]) for name, check in checks.items())
+                + "".join(card(names.get(name, name), labels.get(check["status"], check["status"]), "", check["message"])
+                          for name, check in checks.items())
                 + '</div>', unsafe_allow_html=True)
     checked = pd.Timestamp(status["checked_at_utc"]).tz_convert(live_data.TZ)
     st.caption(f"Last check: {checked:%a %d %b %Y, %H:%M} Swedish time.")
@@ -305,7 +309,9 @@ def monitoring_page():
         drift = drift.sort_values("psi", ascending=False)
         section("Input drift", "Population stability index per input",
                 f"The inputs of the last {checks['drift']['days']} forecast days compared with the same month in the "
-                f"test year. Above {checks['drift']['limit']} counts as drift.")
+                f"test year. Above {checks['drift']['limit']} usually counts as drift. Over only 14 days, prices and "
+                f"weather (and the inputs with one value per day) often go above it without real drift. So these "
+                f"values are for information and never open an alert.")
         st.dataframe(drift, hide_index=True,
                      column_config={"input": "Input", "psi": st.column_config.NumberColumn("PSI", format="%.3f")})
 
