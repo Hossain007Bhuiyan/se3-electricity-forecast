@@ -1,10 +1,10 @@
 {
-  "checked_at_utc": "2026-10-29T19:10:52.913586+00:00",
+  "checked_at_utc": "2026-10-30T11:40:51.954033+00:00",
   "checks": {
     "deadline": {
       "status": "ok",
-      "day": "2026-10-30",
-      "message": "The forecast for 2026-10-30 was made at 06:05, before 12:00."
+      "day": "2026-10-31",
+      "message": "The forecast for 2026-10-31 was made at 06:05, before 12:00."
     },
     "error": {
       "status": "ok",
@@ -27,31 +27,30 @@
       "month": 10,
       "limit": 0.25,
       "psi": {
-        "price_lag_24h": 0.11029963382758567,
-        "price_lag_48h": 0.05694817006998371,
-        "price_lag_168h": 0.6134806533297512,
-        "prev_day_mean": 0.7975296604562638,
-        "prev_day_min": 2.273121571662803,
-        "prev_day_max": 3.7008827292849045,
+        "price_lag_24h": 0.18280358084769444,
+        "price_lag_48h": 0.10315485849611807,
+        "price_lag_168h": 0.5061267277737356,
+        "prev_day_mean": 0.8684234277755722,
+        "prev_day_min": 3.0098562650102423,
+        "prev_day_max": 2.645172802611024,
         "prev_day_std": 2.6651617460324935,
-        "prev_7d_mean": 4.198321328378792,
-        "temperature_2m": 0.3248668098290819,
-        "wind_speed_10m": 0.6032464430382487,
-        "precipitation": 0.011144406568558848,
-        "cloud_cover": 0.09272675829403194,
-        "shortwave_radiation": 0.14458840903318287
+        "prev_7d_mean": 3.3758774002262584,
+        "temperature_2m": 0.24447187506404008,
+        "wind_speed_10m": 0.5102849797373408,
+        "precipitation": 0.0323736002101621,
+        "cloud_cover": 0.11943792968011056,
+        "shortwave_radiation": 0.1468303249728768
       },
       "drifted": [
         "prev_7d_mean",
-        "prev_day_max",
-        "prev_day_std",
         "prev_day_min",
+        "prev_day_std",
+        "prev_day_max",
         "prev_day_mean",
-        "price_lag_168h",
         "wind_speed_10m",
-        "temperature_2m"
+        "price_lag_168h"
       ],
-      "message": "For information: these inputs differ from the same month in the test year: prev_7d_mean, prev_day_max, prev_day_std, prev_day_min, prev_day_mean, price_lag_168h, wind_speed_10m, temperature_2m."
+      "message": "For information: these inputs differ from the same month in the test year: prev_7d_mean, prev_day_min, prev_day_std, prev_day_max, prev_day_mean, wind_speed_10m, price_lag_168h."
     }
   },
   "alerts": []
