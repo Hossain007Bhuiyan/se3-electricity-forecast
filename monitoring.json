@@ -1,10 +1,10 @@
 {
-  "checked_at_utc": "2026-11-12T21:03:38.626042+00:00",
+  "checked_at_utc": "2026-11-13T11:40:56.871049+00:00",
   "checks": {
     "deadline": {
       "status": "ok",
-      "day": "2026-11-13",
-      "message": "The forecast for 2026-11-13 was made at 06:05, before 12:00."
+      "day": "2026-11-14",
+      "message": "The forecast for 2026-11-14 was made at 06:05, before 12:00."
     },
     "error": {
       "status": "alert",
@@ -27,39 +27,39 @@
       "month": 11,
       "limit": 0.25,
       "psi": {
-        "price_lag_24h": 5.020827040405868,
-        "price_lag_48h": 4.969025948984595,
-        "price_lag_168h": 1.3725690988628791,
-        "prev_day_mean": 7.376743982990828,
-        "prev_day_min": 7.162635857957609,
-        "prev_day_max": 7.376743982990828,
-        "prev_day_std": 4.388051489037821,
-        "prev_7d_mean": 6.269040052900239,
-        "temperature_2m": 3.3130420237941003,
-        "wind_speed_10m": 0.7415183422117082,
+        "price_lag_24h": 4.807212626282679,
+        "price_lag_48h": 5.024142482194266,
+        "price_lag_168h": 1.798327980825449,
+        "prev_day_mean": 6.476492021511132,
+        "prev_day_min": 7.021326964003649,
+        "prev_day_max": 6.476492021511132,
+        "prev_day_std": 3.5296698645884006,
+        "prev_7d_mean": 6.476492021511132,
+        "temperature_2m": 3.2702399175442745,
+        "wind_speed_10m": 1.213291145541506,
         "precipitation": 0.013326141202827749,
-        "cloud_cover": 0.18601484946819513,
-        "shortwave_radiation": 0.07522078257215851
+        "cloud_cover": 0.204739329395894,
+        "shortwave_radiation": 0.07216943687973995
       },
       "drifted": [
+        "prev_day_min",
         "prev_day_mean",
         "prev_day_max",
-        "prev_day_min",
         "prev_7d_mean",
-        "price_lag_24h",
         "price_lag_48h",
+        "price_lag_24h",
         "prev_day_std",
         "temperature_2m",
         "price_lag_168h",
         "wind_speed_10m"
       ],
-      "message": "For information: these inputs differ from the same month in the test year: prev_day_mean, prev_day_max, prev_day_min, prev_7d_mean, price_lag_24h, price_lag_48h, prev_day_std, temperature_2m, price_lag_168h, wind_speed_10m."
+      "message": "For information: these inputs differ from the same month in the test year: prev_day_min, prev_day_mean, prev_day_max, prev_7d_mean, price_lag_48h, price_lag_24h, prev_day_std, temperature_2m, price_lag_168h, wind_speed_10m."
     }
   },
   "alerts": [
     {
       "title": "Monitoring alert: live error above limit",
-      "body": "LSTM MAE of the last 7 counted days: 0.560 SEK/kWh, above the limit of 0.319 (baseline: 0.675).\n\nChecked at 2026-11-12 21:03 UTC."
+      "body": "LSTM MAE of the last 7 counted days: 0.560 SEK/kWh, above the limit of 0.319 (baseline: 0.675).\n\nChecked at 2026-11-13 11:40 UTC."
     }
   ]
 }
