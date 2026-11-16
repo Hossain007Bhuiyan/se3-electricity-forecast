@@ -218,3 +218,4 @@
 {"started_utc": "2026-11-15T13:56:19.295741+00:00", "status": "failed", "error": "ReadTimeout: HTTPSConnectionPool(host='api.open-meteo.com', port=443): Read timed out. (read timeout=60)", "duration_s": 60.9}
 {"started_utc": "2026-11-15T15:39:33.665915+00:00", "status": "already forecast", "forecast_day": "2026-11-16", "new_hours": 0, "retrained": false, "model_month": "2026-11", "counted_days": 43, "duration_s": 1.4}
 {"started_utc": "2026-11-16T05:05:47.485788+00:00", "status": "failed", "error": "ReadTimeout: HTTPSConnectionPool(host='api.open-meteo.com', port=443): Read timed out. (read timeout=60)", "duration_s": 61.0}
+{"started_utc": "2026-11-16T07:05:42.738785+00:00", "status": "forecast saved", "forecast_day": "2026-11-17", "new_hours": 24, "retrained": false, "model_month": "2026-11", "counted_days": 43, "duration_s": 1.4}
