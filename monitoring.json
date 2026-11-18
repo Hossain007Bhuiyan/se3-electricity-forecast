@@ -1,10 +1,10 @@
 {
-  "checked_at_utc": "2026-11-17T21:53:10.850547+00:00",
+  "checked_at_utc": "2026-11-18T11:41:06.118059+00:00",
   "checks": {
     "deadline": {
       "status": "ok",
-      "day": "2026-11-18",
-      "message": "The forecast for 2026-11-18 was made at 06:05, before 12:00."
+      "day": "2026-11-19",
+      "message": "The forecast for 2026-11-19 was made at 06:05, before 12:00."
     },
     "error": {
       "status": "alert",
@@ -27,19 +27,19 @@
       "month": 11,
       "limit": 0.25,
       "psi": {
-        "price_lag_24h": 2.2630227192467074,
-        "price_lag_48h": 2.2631371537163014,
-        "price_lag_168h": 5.459943551558834,
+        "price_lag_24h": 2.232658023227319,
+        "price_lag_48h": 2.3008016085057936,
+        "price_lag_168h": 5.495134825452546,
         "prev_day_mean": 5.382776608540934,
-        "prev_day_min": 5.176387994677639,
+        "prev_day_min": 5.130844695068631,
         "prev_day_max": 4.696632772094457,
-        "prev_day_std": 4.318006370228219,
+        "prev_day_std": 4.388051489037821,
         "prev_7d_mean": 8.283089355027482,
-        "temperature_2m": 3.5250571371408226,
-        "wind_speed_10m": 1.325284179121962,
-        "precipitation": 0.040849203810537325,
-        "cloud_cover": 0.05671173455384419,
-        "shortwave_radiation": 0.01937210508688183
+        "temperature_2m": 4.171154795619494,
+        "wind_speed_10m": 1.3381174374210503,
+        "precipitation": 0.08033511265207857,
+        "cloud_cover": 0.044945927375644235,
+        "shortwave_radiation": 0.02330887667109657
       },
       "drifted": [
         "prev_7d_mean",
@@ -59,7 +59,7 @@
   "alerts": [
     {
       "title": "Monitoring alert: live error above limit",
-      "body": "LSTM MAE of the last 7 counted days: 0.378 SEK/kWh, above the limit of 0.319 (baseline: 0.910).\n\nChecked at 2026-11-17 21:53 UTC."
+      "body": "LSTM MAE of the last 7 counted days: 0.378 SEK/kWh, above the limit of 0.319 (baseline: 0.910).\n\nChecked at 2026-11-18 11:41 UTC."
     }
   ]
 }
