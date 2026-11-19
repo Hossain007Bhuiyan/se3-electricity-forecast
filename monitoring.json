@@ -1,5 +1,5 @@
 {
-  "checked_at_utc": "2026-11-19T11:41:06.694686+00:00",
+  "checked_at_utc": "2026-11-19T19:09:01.315451+00:00",
   "checks": {
     "deadline": {
       "status": "ok",
@@ -8,18 +8,18 @@
     },
     "error": {
       "status": "alert",
-      "days": 46,
-      "lstm_mae": 0.33256795742203016,
-      "weekly_naive_mae": 0.7494543898809524,
+      "days": 47,
+      "lstm_mae": 0.32720530394457026,
+      "weekly_naive_mae": 0.7851050297619049,
       "limit": 0.3194472476255649,
-      "message": "LSTM MAE of the last 7 counted days: 0.333 SEK/kWh, above the limit of 0.319 (baseline: 0.749)."
+      "message": "LSTM MAE of the last 7 counted days: 0.327 SEK/kWh, above the limit of 0.319 (baseline: 0.785)."
     },
     "relative": {
       "status": "ok",
-      "days": 46,
-      "ratio": 0.4437467601929147,
+      "days": 47,
+      "ratio": 0.41676628163215346,
       "limit": 0.9598187730076034,
-      "message": "LSTM error of the last 7 counted days: 0.44 times the baseline's error, within the limit of 0.96."
+      "message": "LSTM error of the last 7 counted days: 0.42 times the baseline's error, within the limit of 0.96."
     },
     "drift": {
       "status": "info",
@@ -59,7 +59,7 @@
   "alerts": [
     {
       "title": "Monitoring alert: live error above limit",
-      "body": "LSTM MAE of the last 7 counted days: 0.333 SEK/kWh, above the limit of 0.319 (baseline: 0.749).\n\nChecked at 2026-11-19 11:41 UTC."
+      "body": "LSTM MAE of the last 7 counted days: 0.327 SEK/kWh, above the limit of 0.319 (baseline: 0.785).\n\nChecked at 2026-11-19 19:09 UTC."
     }
   ]
 }
