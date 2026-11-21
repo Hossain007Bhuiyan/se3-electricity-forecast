@@ -1,10 +1,10 @@
 {
-  "checked_at_utc": "2026-11-20T21:29:48.319307+00:00",
+  "checked_at_utc": "2026-11-21T11:40:54.896336+00:00",
   "checks": {
     "deadline": {
       "status": "ok",
-      "day": "2026-11-21",
-      "message": "The forecast for 2026-11-21 was made at 06:05, before 12:00."
+      "day": "2026-11-22",
+      "message": "The forecast for 2026-11-22 was made at 06:05, before 12:00."
     },
     "error": {
       "status": "ok",
@@ -27,33 +27,35 @@
       "month": 11,
       "limit": 0.25,
       "psi": {
-        "price_lag_24h": 2.46918882010433,
-        "price_lag_48h": 2.455021626212801,
-        "price_lag_168h": 4.364752296035184,
-        "prev_day_mean": 5.582896216453762,
-        "prev_day_min": 5.256959918650897,
-        "prev_day_max": 4.696632772094457,
-        "prev_day_std": 4.215813701034878,
+        "price_lag_24h": 2.3262433028108207,
+        "price_lag_48h": 2.512303920847752,
+        "price_lag_168h": 2.976743859922323,
+        "prev_day_mean": 5.382776608540934,
+        "prev_day_min": 5.176387994677639,
+        "prev_day_max": 4.504673007547488,
+        "prev_day_std": 4.149670626377946,
         "prev_7d_mean": 8.283089355027482,
-        "temperature_2m": 4.035352023857926,
-        "wind_speed_10m": 1.3882159669233232,
-        "precipitation": 0.21293413601022174,
-        "cloud_cover": 0.14304909977715852,
-        "shortwave_radiation": 0.04822904816634699
+        "temperature_2m": 4.037982381446046,
+        "wind_speed_10m": 1.4304945839865761,
+        "precipitation": 0.37775983396282153,
+        "cloud_cover": 0.2630312003359017,
+        "shortwave_radiation": 0.08793854962773678
       },
       "drifted": [
         "prev_7d_mean",
         "prev_day_mean",
         "prev_day_min",
         "prev_day_max",
-        "price_lag_168h",
         "prev_day_std",
         "temperature_2m",
-        "price_lag_24h",
+        "price_lag_168h",
         "price_lag_48h",
-        "wind_speed_10m"
+        "price_lag_24h",
+        "wind_speed_10m",
+        "precipitation",
+        "cloud_cover"
       ],
-      "message": "For information: these inputs differ from the same month in the test year: prev_7d_mean, prev_day_mean, prev_day_min, prev_day_max, price_lag_168h, prev_day_std, temperature_2m, price_lag_24h, price_lag_48h, wind_speed_10m."
+      "message": "For information: these inputs differ from the same month in the test year: prev_7d_mean, prev_day_mean, prev_day_min, prev_day_max, prev_day_std, temperature_2m, price_lag_168h, price_lag_48h, price_lag_24h, wind_speed_10m, precipitation, cloud_cover."
     }
   },
   "alerts": []
