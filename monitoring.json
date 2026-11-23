@@ -1,10 +1,10 @@
 {
-  "checked_at_utc": "2026-11-22T20:27:38.024694+00:00",
+  "checked_at_utc": "2026-11-23T11:41:02.036612+00:00",
   "checks": {
     "deadline": {
       "status": "ok",
-      "day": "2026-11-23",
-      "message": "The forecast for 2026-11-23 was made at 10:50, before 12:00."
+      "day": "2026-11-24",
+      "message": "The forecast for 2026-11-24 was made at 08:05, before 12:00."
     },
     "error": {
       "status": "ok",
@@ -27,19 +27,19 @@
       "month": 11,
       "limit": 0.25,
       "psi": {
-        "price_lag_24h": 2.1263310728997,
-        "price_lag_48h": 2.3693584035542425,
-        "price_lag_168h": 2.9245851264681013,
+        "price_lag_24h": 2.101345011615912,
+        "price_lag_48h": 2.169446173643122,
+        "price_lag_168h": 2.9712184433631688,
         "prev_day_mean": 5.190816843993965,
         "prev_day_min": 4.318006370228219,
         "prev_day_max": 4.321908414380889,
-        "prev_day_std": 3.463526789931469,
+        "prev_day_std": 3.3035900065082733,
         "prev_7d_mean": 8.283089355027482,
-        "temperature_2m": 4.041928731175663,
-        "wind_speed_10m": 1.4669873031525038,
+        "temperature_2m": 4.081614613965736,
+        "wind_speed_10m": 1.4451153098938911,
         "precipitation": 0.5000247551985416,
-        "cloud_cover": 0.2650455815963712,
-        "shortwave_radiation": 0.1254891353424813
+        "cloud_cover": 0.27361518692842945,
+        "shortwave_radiation": 0.14331293223338532
       },
       "drifted": [
         "prev_7d_mean",
