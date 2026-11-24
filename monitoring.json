@@ -1,10 +1,10 @@
 {
-  "checked_at_utc": "2026-11-24T20:52:00.478148+00:00",
+  "checked_at_utc": "2026-11-24T23:14:38.029706+00:00",
   "checks": {
     "deadline": {
-      "status": "ok",
-      "day": "2026-11-25",
-      "message": "The forecast for 2026-11-25 was made at 06:05, before 12:00."
+      "status": "waiting",
+      "day": "2026-11-26",
+      "message": "The forecast for 2026-11-26 has not been made yet. It is still before 12:00."
     },
     "error": {
       "status": "ok",
