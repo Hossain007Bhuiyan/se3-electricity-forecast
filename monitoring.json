@@ -1,10 +1,10 @@
 {
-  "checked_at_utc": "2026-11-24T01:10:20.285137+00:00",
+  "checked_at_utc": "2026-11-24T11:40:58.241398+00:00",
   "checks": {
     "deadline": {
-      "status": "waiting",
+      "status": "ok",
       "day": "2026-11-25",
-      "message": "The forecast for 2026-11-25 has not been made yet. It is still before 12:00."
+      "message": "The forecast for 2026-11-25 was made at 06:05, before 12:00."
     },
     "error": {
       "status": "ok",
@@ -28,18 +28,18 @@
       "limit": 0.25,
       "psi": {
         "price_lag_24h": 2.101345011615912,
-        "price_lag_48h": 2.169446173643122,
-        "price_lag_168h": 2.9712184433631688,
+        "price_lag_48h": 2.144460112359333,
+        "price_lag_168h": 2.918357912520987,
         "prev_day_mean": 5.190816843993965,
         "prev_day_min": 4.318006370228219,
         "prev_day_max": 4.321908414380889,
         "prev_day_std": 3.3035900065082733,
         "prev_7d_mean": 8.283089355027482,
-        "temperature_2m": 4.081614613965736,
-        "wind_speed_10m": 1.4451153098938911,
-        "precipitation": 0.5000247551985416,
-        "cloud_cover": 0.27361518692842945,
-        "shortwave_radiation": 0.14331293223338532
+        "temperature_2m": 3.7073360790062306,
+        "wind_speed_10m": 1.488995095423004,
+        "precipitation": 0.4168861890104465,
+        "cloud_cover": 0.20661023575730672,
+        "shortwave_radiation": 0.10045309296067995
       },
       "drifted": [
         "prev_7d_mean",
@@ -52,10 +52,9 @@
         "price_lag_48h",
         "price_lag_24h",
         "wind_speed_10m",
-        "precipitation",
-        "cloud_cover"
+        "precipitation"
       ],
-      "message": "For information: these inputs differ from the same month in the test year: prev_7d_mean, prev_day_mean, prev_day_max, prev_day_min, temperature_2m, prev_day_std, price_lag_168h, price_lag_48h, price_lag_24h, wind_speed_10m, precipitation, cloud_cover."
+      "message": "For information: these inputs differ from the same month in the test year: prev_7d_mean, prev_day_mean, prev_day_max, prev_day_min, temperature_2m, prev_day_std, price_lag_168h, price_lag_48h, price_lag_24h, wind_speed_10m, precipitation."
     }
   },
   "alerts": []
