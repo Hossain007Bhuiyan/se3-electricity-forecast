@@ -1,5 +1,5 @@
 {
-  "checked_at_utc": "2026-11-25T11:40:59.078620+00:00",
+  "checked_at_utc": "2026-11-25T20:09:47.108778+00:00",
   "checks": {
     "deadline": {
       "status": "ok",
@@ -7,19 +7,19 @@
       "message": "The forecast for 2026-11-26 was made at 06:05, before 12:00."
     },
     "error": {
-      "status": "ok",
-      "days": 52,
-      "lstm_mae": 0.2842086069422502,
-      "weekly_naive_mae": 0.4672831696428571,
+      "status": "alert",
+      "days": 53,
+      "lstm_mae": 0.3982813266629946,
+      "weekly_naive_mae": 0.5039422172619047,
       "limit": 0.3194472476255649,
-      "message": "LSTM MAE of the last 7 counted days: 0.284 SEK/kWh, within the limit of 0.319 (baseline: 0.467)."
+      "message": "LSTM MAE of the last 7 counted days: 0.398 SEK/kWh, above the limit of 0.319 (baseline: 0.504)."
     },
     "relative": {
       "status": "ok",
-      "days": 52,
-      "ratio": 0.6082149441835661,
+      "days": 53,
+      "ratio": 0.7903313376422343,
       "limit": 0.9598187730076034,
-      "message": "LSTM error of the last 7 counted days: 0.61 times the baseline's error, within the limit of 0.96."
+      "message": "LSTM error of the last 7 counted days: 0.79 times the baseline's error, within the limit of 0.96."
     },
     "drift": {
       "status": "info",
@@ -57,5 +57,10 @@
       "message": "For information: these inputs differ from the same month in the test year: prev_7d_mean, prev_day_mean, prev_day_max, prev_day_min, prev_day_std, price_lag_168h, temperature_2m, price_lag_48h, price_lag_24h, wind_speed_10m, precipitation."
     }
   },
-  "alerts": []
+  "alerts": [
+    {
+      "title": "Monitoring alert: live error above limit",
+      "body": "LSTM MAE of the last 7 counted days: 0.398 SEK/kWh, above the limit of 0.319 (baseline: 0.504).\n\nChecked at 2026-11-25 20:09 UTC."
+    }
+  ]
 }
