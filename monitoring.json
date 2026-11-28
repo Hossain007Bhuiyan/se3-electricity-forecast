@@ -1,10 +1,10 @@
 {
-  "checked_at_utc": "2026-11-27T22:17:46.163044+00:00",
+  "checked_at_utc": "2026-11-28T11:40:57.444961+00:00",
   "checks": {
     "deadline": {
       "status": "ok",
-      "day": "2026-11-28",
-      "message": "The forecast for 2026-11-28 was made at 06:05, before 12:00."
+      "day": "2026-11-29",
+      "message": "The forecast for 2026-11-29 was made at 06:06, before 12:00."
     },
     "error": {
       "status": "alert",
@@ -27,19 +27,19 @@
       "month": 11,
       "limit": 0.25,
       "psi": {
-        "price_lag_24h": 2.359337853029065,
-        "price_lag_48h": 2.196468528700409,
-        "price_lag_168h": 3.0003698814003394,
-        "prev_day_mean": 5.382776608540934,
-        "prev_day_min": 4.388051489037821,
-        "prev_day_max": 5.382776608540934,
-        "prev_day_std": 4.321908414380889,
+        "price_lag_24h": 2.6597962136032924,
+        "price_lag_48h": 2.422448411870949,
+        "price_lag_168h": 2.7819397621564033,
+        "prev_day_mean": 5.582896216453762,
+        "prev_day_min": 5.256959918650897,
+        "prev_day_max": 5.582896216453762,
+        "prev_day_std": 3.6357645779344114,
         "prev_7d_mean": 8.283089355027482,
-        "temperature_2m": 2.23974278845307,
-        "wind_speed_10m": 0.4523056409635197,
+        "temperature_2m": 2.4820064672016273,
+        "wind_speed_10m": 0.43384647034218726,
         "precipitation": 0.18927186613449454,
-        "cloud_cover": 0.08595334001733916,
-        "shortwave_radiation": 0.06232365958653877
+        "cloud_cover": 0.06915523371951213,
+        "shortwave_radiation": 0.07420635131390244
       },
       "drifted": [
         "prev_7d_mean",
@@ -59,7 +59,7 @@
   "alerts": [
     {
       "title": "Monitoring alert: live error above limit",
-      "body": "LSTM MAE of the last 7 counted days: 0.441 SEK/kWh, above the limit of 0.319 (baseline: 0.511).\n\nChecked at 2026-11-27 22:17 UTC."
+      "body": "LSTM MAE of the last 7 counted days: 0.441 SEK/kWh, above the limit of 0.319 (baseline: 0.511).\n\nChecked at 2026-11-28 11:40 UTC."
     }
   ]
 }
